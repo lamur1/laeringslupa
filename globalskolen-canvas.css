@@ -1,0 +1,117 @@
+/* Globalskolen - Canvas global CSS
+   Oppdatert: 01.05.2026
+   --------------------------------------------------------- */
+
+/* Slaar av ligaturer i all tekst */
+:root {
+  font-variant-ligatures: none;
+}
+
+/* Kuleramme — kompakt etikett (skjult som standard, vises ved ef-compact) */
+#ef-chevron-bar .ef-bar-label-short { display: none; }
+#ef-chevron-bar.ef-compact .ef-bar-label-full { display: none !important; }
+#ef-chevron-bar.ef-compact .ef-bar-label-short { display: inline !important; }
+
+/* Kuler i kompakt modus — visuelt 14px, touch-target via ::after */
+#ef-chevron-bar.ef-compact .ef-bead {
+  width: 14px !important;
+  height: 14px !important;
+  font-size: 0 !important;
+  overflow: visible !important;
+}
+#ef-chevron-bar.ef-compact .ef-bead::after {
+  content: '';
+  position: absolute;
+  top: -15px; right: -8px;
+  bottom: -15px; left: -8px;
+  pointer-events: auto;
+}
+#ef-chevron-bar.ef-compact .ef-bead-cur {
+  width: 18px !important;
+  height: 18px !important;
+}
+#ef-chevron-bar.ef-compact .ef-line-piece { height: 2px !important; }
+
+/* Pille i kompakt modus — kun ikon */
+#ef-chevron-bar.ef-compact .ef-pill-text { display: none !important; }
+#ef-chevron-bar.ef-compact .ef-pill {
+  padding: 7px !important;
+  border-radius: 50% !important;
+  width: 32px !important;
+  height: 32px !important;
+  justify-content: center !important;
+}
+
+
+/* Modal — full skjerm fraa 875px og ned */
+@media (max-width: 875px) {
+  #ef-backdrop { padding: 0 !important; align-items: stretch !important; }
+  #ef-modal {
+    width: 100vw !important;
+    max-width: 100vw !important;
+    height: 100dvh !important;
+    max-height: 100dvh !important;
+    border-radius: 0 !important;
+    margin: 0 !important;
+  }
+  .ef-modal-body {
+    flex-direction: column !important;
+    padding: 0 !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+  }
+  #ef-left-col {
+    width: 100% !important;
+    border-right: none !important;
+    padding-right: 0 !important;
+    overflow-y: visible !important;
+    flex-shrink: 0 !important;
+  }
+  #ef-right-col { padding-left: 0 !important; }
+
+  /* Skjul desktop-overskrifter */
+  .ef-desktop-heading { display: none !important; }
+
+  /* Accordion seksjoner */
+  .ef-section {
+    border-bottom: 2px solid #e0ddd6;
+  }
+  .ef-section > summary {
+    display: flex !important;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 20px;
+    font-size: 15px;
+    font-weight: 700;
+    color: #2d3b45;
+    cursor: pointer;
+    list-style: none;
+    user-select: none;
+    background: #f8f7f4;
+    min-height: 56px;
+  }
+  .ef-section > summary::-webkit-details-marker { display: none; }
+  .ef-section > summary::after {
+    content: '';
+    display: inline-block;
+    width: 28px;
+    height: 28px;
+    background-color: #2d3b45;
+    border-radius: 50%;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 16 16'%3E%3Cpath d='M4 6l4 4 4-4' stroke='white' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round' fill='none'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: center;
+    flex-shrink: 0;
+    transition: transform 0.2s;
+  }
+  .ef-section[open] > summary::after {
+    transform: rotate(180deg);
+  }
+  .ef-section > .ef-section-body { padding: 12px 20px 20px; }
+}
+
+/* Over 875px: skjul mobile summary, vis innhold alltid */
+@media (min-width: 876px) {
+  .ef-section > summary { display: none !important; }
+  .ef-section { display: contents; }
+}

@@ -1,0 +1,96 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="580" height="320">
+  <defs>
+    <linearGradient id="gG" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#4a7c1f"/>
+      <stop offset="100%" stop-color="#7cb342"/>
+    </linearGradient>
+    <linearGradient id="gR" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#c62828"/>
+      <stop offset="100%" stop-color="#ef5350"/>
+    </linearGradient>
+    <linearGradient id="dashGrad" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#888780"/>
+      <stop offset="50%" stop-color="#888780"/>
+      <stop offset="50%" stop-color="#e8e6de"/>
+      <stop offset="100%" stop-color="#e8e6de"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="580" height="320" rx="10" fill="#f9f8f4"/>
+  <text x="14" y="18" font-family="system-ui,sans-serif" font-size="13" font-weight="bold" fill="#2c2c2a">Aktivitetscelle — symboloversikt</text>
+
+  <rect x="10" y="32" width="130" height="38" rx="6" fill="#ffffff" stroke="#d3d1c7" stroke-width="0.75"/>
+  <rect x="14" y="36" width="118" height="26" rx="7" fill="rgba(255,255,255,0.58)" stroke="rgba(211,209,199,0.7)" stroke-width="0.5"/>
+  <circle cx="32" cy="49" r="9" fill="#639922" stroke="#3b6d11" stroke-width="2"/>
+  <rect x="50" y="42" width="14" height="14" rx="2" fill="#639922" stroke="#3b6d11" stroke-width="1.5"/>
+  <rect x="70" y="38" width="56" height="22" rx="5" fill="#f5f4ee" stroke="#d3d1c7" stroke-width="0.5"/>
+  <line x1="73" y1="49" x2="123" y2="49" stroke="#d3d1c7" stroke-width="1.5"/>
+  <rect x="94.8" y="43" width="2.4" height="12" rx="1" fill="#888780"/>
+  <rect x="97.2" y="46" width="20" height="6" rx="2" fill="url(#gG)"/>
+  <rect x="10" y="67" width="130" height="3" rx="1.5" fill="url(#gG)"/>
+  <text x="148" y="47" font-family="system-ui,sans-serif" font-size="12" fill="#5f5e5a">Aktiv og i forkant —</text>
+  <text x="148" y="62" font-family="system-ui,sans-serif" font-size="12" fill="#5f5e5a">innlogget og levert nylig</text>
+
+  <rect x="10" y="78" width="130" height="38" rx="6" fill="#ffffff" stroke="#d3d1c7" stroke-width="0.75"/>
+  <rect x="14" y="82" width="118" height="26" rx="7" fill="rgba(255,255,255,0.58)" stroke="rgba(211,209,199,0.7)" stroke-width="0.5"/>
+  <circle cx="32" cy="95" r="9" fill="#dddbd3" stroke="#b4b2a9" stroke-width="1.5"/>
+  <path d="M32,86 A9,9 0 1,1 23,95 L32,95 Z" fill="#639922"/>
+  <rect x="50" y="88" width="14" height="14" rx="2" fill="#639922" stroke="#3b6d11" stroke-width="1.5"/>
+  <rect x="70" y="84" width="56" height="22" rx="5" fill="#f5f4ee" stroke="#d3d1c7" stroke-width="0.5"/>
+  <line x1="73" y1="95" x2="123" y2="95" stroke="#d3d1c7" stroke-width="1.5"/>
+  <rect x="94.8" y="89" width="2.4" height="12" rx="1" fill="#888780"/>
+  <rect x="10" y="113" width="104" height="3" rx="1.5" fill="url(#gG)"/>
+  <text x="148" y="93" font-family="system-ui,sans-serif" font-size="12" fill="#5f5e5a">Innlogget for 5 dager siden —</text>
+  <text x="148" y="108" font-family="system-ui,sans-serif" font-size="12" fill="#5f5e5a">i rute</text>
+
+  <rect x="10" y="124" width="130" height="38" rx="6" fill="rgba(46,125,50,0.18)" stroke="#d3d1c7" stroke-width="0.75"/>
+  <rect x="14" y="128" width="118" height="26" rx="7" fill="rgba(255,255,255,0.58)" stroke="rgba(211,209,199,0.7)" stroke-width="0.5"/>
+  <circle cx="32" cy="141" r="9" fill="#639922" stroke="#3b6d11" stroke-width="2"/>
+  <rect x="50" y="134" width="14" height="14" rx="2" fill="#639922" stroke="#3b6d11" stroke-width="1.5"/>
+  <rect x="70" y="130" width="56" height="22" rx="5" fill="#f5f4ee" stroke="#d3d1c7" stroke-width="0.5"/>
+  <line x1="73" y1="141" x2="123" y2="141" stroke="#d3d1c7" stroke-width="1.5"/>
+  <rect x="94.8" y="135" width="2.4" height="12" rx="1" fill="#888780"/>
+  <rect x="97.2" y="138" width="8" height="6" rx="2" fill="url(#gG)"/>
+  <rect x="10" y="159" width="130" height="3" rx="1.5" fill="url(#gG)"/>
+  <text x="148" y="139" font-family="system-ui,sans-serif" font-size="12" fill="#5f5e5a">2 leksjoner i forkant —</text>
+  <text x="148" y="154" font-family="system-ui,sans-serif" font-size="12" fill="#5f5e5a">lys grønn bakgrunn</text>
+
+  <rect x="10" y="170" width="130" height="38" rx="6" fill="rgba(245,124,0,0.15)" stroke="#d3d1c7" stroke-width="0.75"/>
+  <rect x="14" y="174" width="118" height="26" rx="7" fill="rgba(255,255,255,0.58)" stroke="rgba(211,209,199,0.7)" stroke-width="0.5"/>
+  <circle cx="32" cy="187" r="9" fill="#dddbd3" stroke="#b4b2a9" stroke-width="1"/>
+  <path d="M32,178 A9,9 0 0,1 32,196 L32,187 Z" fill="#97c459"/>
+  <rect x="50" y="180" width="14" height="14" rx="2" fill="url(#dashGrad)" stroke="#b4b2a9" stroke-width="1"/>
+  <rect x="70" y="176" width="56" height="22" rx="5" fill="#f5f4ee" stroke="#d3d1c7" stroke-width="0.5"/>
+  <line x1="73" y1="187" x2="123" y2="187" stroke="#d3d1c7" stroke-width="1.5"/>
+  <rect x="94.8" y="181" width="2.4" height="12" rx="1" fill="#888780"/>
+  <rect x="82.8" y="184" width="12" height="6" rx="2" fill="url(#gR)"/>
+  <rect x="10" y="205" width="39" height="3" rx="1.5" fill="url(#gG)"/>
+  <text x="148" y="185" font-family="system-ui,sans-serif" font-size="12" fill="#5f5e5a">3 leksjoner etter skjema —</text>
+  <text x="148" y="200" font-family="system-ui,sans-serif" font-size="12" fill="#5f5e5a">lys gul bakgrunn</text>
+
+  <rect x="10" y="216" width="130" height="38" rx="6" fill="rgba(198,40,40,0.12)" stroke="#d3d1c7" stroke-width="0.75"/>
+  <rect x="14" y="220" width="118" height="26" rx="7" fill="rgba(255,255,255,0.58)" stroke="rgba(211,209,199,0.7)" stroke-width="0.5"/>
+  <circle cx="32" cy="233" r="9" fill="#dddbd3" stroke="#b4b2a9" stroke-width="0.75"/>
+  <rect x="50" y="226" width="14" height="14" rx="2" fill="rgba(198,40,40,0.10)" stroke="#a32d2d" stroke-width="1.5"/>
+  <line x1="52" y1="228" x2="62" y2="238" stroke="#a32d2d" stroke-width="1.5"/>
+  <line x1="62" y1="228" x2="52" y2="238" stroke="#a32d2d" stroke-width="1.5"/>
+  <rect x="70" y="222" width="56" height="22" rx="5" fill="#f5f4ee" stroke="#d3d1c7" stroke-width="0.5"/>
+  <line x1="73" y1="233" x2="123" y2="233" stroke="#d3d1c7" stroke-width="1.5"/>
+  <rect x="94.8" y="227" width="2.4" height="12" rx="1" fill="#888780"/>
+  <rect x="70.8" y="230" width="24" height="6" rx="2" fill="url(#gR)"/>
+  <rect x="10" y="251" width="20" height="3" rx="1.5" fill="url(#gG)"/>
+  <text x="148" y="231" font-family="system-ui,sans-serif" font-size="12" fill="#5f5e5a">4+ leksjoner etter skjema —</text>
+  <text x="148" y="246" font-family="system-ui,sans-serif" font-size="12" fill="#5f5e5a">lys rød bakgrunn</text>
+
+  <rect x="10" y="262" width="130" height="38" rx="6" fill="#ffffff" stroke="#d3d1c7" stroke-width="0.75"/>
+  <rect x="14" y="266" width="118" height="26" rx="7" fill="rgba(255,255,255,0.58)" stroke="rgba(211,209,199,0.7)" stroke-width="0.5"/>
+  <circle cx="32" cy="279" r="9" fill="#dddbd3" stroke="#b4b2a9" stroke-width="0.75"/>
+  <rect x="50" y="272" width="14" height="14" rx="2" fill="rgba(198,40,40,0.10)" stroke="#a32d2d" stroke-width="1.5"/>
+  <line x1="52" y1="274" x2="62" y2="284" stroke="#a32d2d" stroke-width="1.5"/>
+  <line x1="62" y1="274" x2="52" y2="284" stroke="#a32d2d" stroke-width="1.5"/>
+  <rect x="70" y="268" width="56" height="22" rx="5" fill="#f5f4ee" stroke="#d3d1c7" stroke-width="0.5"/>
+  <line x1="73" y1="279" x2="123" y2="279" stroke="#d3d1c7" stroke-width="1.5"/>
+  <rect x="94.8" y="273" width="2.4" height="12" rx="1" fill="#888780"/>
+  <circle cx="97" cy="279" r="4.5" fill="none" stroke="#c8c6be" stroke-width="1.5" stroke-dasharray="2.5,2"/>
+  <text x="148" y="283" font-family="system-ui,sans-serif" font-size="12" fill="#5f5e5a">Ingen frister satt i kurset</text>
+</svg>

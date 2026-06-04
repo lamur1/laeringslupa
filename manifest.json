@@ -1,0 +1,35 @@
+{
+  "manifest_version": 3,
+  "name": "Canvas Aktivitetskolonne",
+  "version": "2026.5.15.0935",
+  "description": "Viser innloggings- og innleveringsaktivitet direkte i Canvas vurderingsoversikt.",
+  "permissions": ["storage", "tabs", "clipboardWrite"],
+  "host_permissions": ["*://*.instructure.com/*"],
+  "content_scripts": [
+    {
+      "matches": ["*://*.instructure.com/courses/*/gradebook*"],
+      "js": ["content.js"],
+      "run_at": "document_idle"
+    }
+  ],
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "Canvas Aktivitetskolonne",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
+  },
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  "web_accessible_resources": [
+    {
+      "resources": ["images/globalskolen-logo.png"],
+      "matches": ["*://*.instructure.com/*"]
+    }
+  ]
+}
