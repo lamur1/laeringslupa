@@ -45,10 +45,10 @@ def draw_icon(size):
     W = H = size * SS
     s = W / 128.0   # skaleringsfaktor
 
-    # Fargar
-    BG      = [46,  125, 50,  255]   # #2e7d32 mørk grøn
-    WHITE   = [255, 255, 255, 255]
-    LENS_BG = [200, 230, 201, 255]   # lys grøn linsefyll
+    # Fargar — variant 4: Djupblå + gull
+    BG      = [13,  43,  94,  255]   # #0d2b5e djup navy
+    WHITE   = [255, 215, 64,  255]   # #ffd740 gull
+    LENS_BG = [255, 215, 64,  24 ]   # gull med låg opacity (linsefyll)
     TRANSP  = [0,   0,   0,   0]
 
     # Geometri (normalisert til 128px-koordinatar, skalert med s)
