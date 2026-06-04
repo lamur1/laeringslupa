@@ -393,11 +393,9 @@
     );
 
     const cacheKey  = sectionId ? `cak_data_${courseId}_s${sectionId}` : `cak_data_${courseId}`;
-    const cacheTime = 60 * 60 * 1000; // 1 time
+    const cacheTime = 15 * 60 * 1000; // 15 min — leksjonsdata (cak_mod_) har eigen 2t-cache
     if (forceRefresh) {
-      moduleCompletionCache = {};
-      const cId = getCourseId();
-      if (cId) chrome.storage.local.remove(`cak_mod_${cId}`);
+      moduleCompletionCache = {}; // tøm minnet — cak_mod_ i storage rørast ikkje
     }
 
     // Sjekk cache først
@@ -2206,7 +2204,10 @@
       return true;
     }
     if (msg.type === 'SOFT_REFRESH') {
-      fetchData(true).then(() => sendResponse({ ok: true })).catch(() => sendResponse({ ok: false }));
+      fetchData(true)
+        .then(() => loadModuleCache())
+        .then(() => { invalidateCache(); updateOverlay(); sendResponse({ ok: true }); })
+        .catch(() => sendResponse({ ok: false }));
       return true;
     }
     if (msg.type === 'FILTER_BY_LESSON_COUNT') {

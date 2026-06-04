@@ -1,9 +1,10 @@
 {
   "manifest_version": 3,
-  "name": "Canvas Aktivitetskolonne",
-  "version": "2026.5.15.0935",
+  "name": "Læringslupa",
+  "version": "2026.6.5.0102",
   "description": "Viser innloggings- og innleveringsaktivitet direkte i Canvas vurderingsoversikt.",
-  "permissions": ["storage", "tabs", "clipboardWrite"],
+  "permissions": ["storage", "tabs", "clipboardWrite", "alarms"],
+  "background": { "service_worker": "background.js" },
   "host_permissions": ["*://*.instructure.com/*"],
   "content_scripts": [
     {
