@@ -38,7 +38,6 @@ Desse reglane vart brotne 20.04.2026 og kosta ein økt å rette opp:
 
 ## Kjente ting å fikse
 
-- Kolonneoverskrift manglar over Læringslupa-kolonnen (skal matche "Elevens namn"-formatet i Canvas gradebook)
 - Framtidsprikkar skal vere tydelegare (stipla stil)
 
 ## Arkitektur — tre lag (lag 1+2 er implementert, lag 3 er neste)

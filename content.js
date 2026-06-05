@@ -167,13 +167,13 @@
         align-items: center;
         justify-content: center;
         gap: 5px;
-        background: #eeecea;
-        border: 1px solid #c0beb5;
+        background: #1a1f1a;
+        border: 1px solid #1a1f1a;
         border-radius: 7px 7px 0 0;
-        box-shadow: 0 -3px 8px rgba(0,0,0,0.10), 0 -1px 3px rgba(0,0,0,0.06);
+        box-shadow: 0 -3px 8px rgba(0,0,0,0.18), 0 -1px 3px rgba(0,0,0,0.10);
         box-sizing: border-box;
         font-size: 11px;
-        color: #5f5e5a;
+        color: #fff;
         font-family: LatoWeb, Lato, sans-serif;
         font-weight: 600;
         letter-spacing: 0.03em;
