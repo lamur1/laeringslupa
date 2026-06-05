@@ -44,6 +44,7 @@
   let loadingBarEl   = null;
   let isLoading      = false;
   let moduleCompletionCache = {}; // sid -> [{id, name, total, completed}] | false
+  let freshModuleSids       = new Set(); // sids som er henta fersk frå API denne sesjonen
   let moduleDeadlineMap     = {}; // modId -> latest due_at Date | null
   let currentHoverSid = null;
   let studentNames = {}; // sid -> name
@@ -1401,17 +1402,20 @@
   }
 
   // ─── Bakgrunnslasting av modulvisningsdata ────────────────────────────────
+  // Hentar alltid fersk data frå Canvas API for alle elevar.
+  // cak_mod_ brukast berre til rask startvisning — ikkje til å hoppe over henting.
+  // freshModuleSids hindrar dobbelhenting innanfor same sideinnlasting.
   async function backgroundLoadModuleCompletion() {
     const sids = Object.keys(studentData);
     for (const sid of sids) {
-      if (studentData[sid]?.avgViewPct !== undefined) continue;
-      if (!moduleCompletionCache.hasOwnProperty(sid)) {
-        try {
-          moduleCompletionCache[sid] = await fetchModuleCompletion(sid);
-        } catch (e) {
-          moduleCompletionCache[sid] = false;
-          if (e.status === 403) break; // Canvas har blokkert student_id-tilgang — avbryt heile løkka
-        }
+      if (freshModuleSids.has(sid)) continue; // allereie henta fersk denne sesjonen
+      try {
+        moduleCompletionCache[sid] = await fetchModuleCompletion(sid);
+        freshModuleSids.add(sid);
+      } catch (e) {
+        moduleCompletionCache[sid] = false;
+        freshModuleSids.add(sid);
+        if (e.status === 403) break; // Canvas har blokkert student_id-tilgang — avbryt heile løkka
       }
       const pct = calcAvgViewPct(moduleCompletionCache[sid], studentData[sid]?.activeMods);
       if (studentData[sid]) {
