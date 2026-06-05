@@ -653,7 +653,7 @@
           // Mangler-sjekk: sub.missing overstyrer alltid — også ved levering.
           // Lærer som manuelt setter «Mangler» etter levering gir signal om at mer må gjøres.
           // Canvas endrer automatisk fra «Mangler» til «Sen» ved levering etter frist.
-          const isExcused = sub?.workflow_state === 'excused';
+          const isExcused = sub?.workflow_state === 'excused' || sub?.excused === true;
           const hasActivity = sub && (
             sub.submitted_at ||
             sub.graded_at ||
@@ -689,7 +689,8 @@
             );
             if (isFullfort) lessons[modId].fullfort++;
             if (isFullfort && due <= now) lessons[modId].fullfortPastDue++;
-            if (sub.workflow_state === 'submitted' || sub.workflow_state === 'pending_review') lessons[modId].venter++;
+            if (!isExcused && (sub.workflow_state === 'submitted' || sub.workflow_state === 'pending_review')) lessons[modId].venter++;
+            if (isExcused) lessons[modId].excused = (lessons[modId].excused || 0) + 1;
             if (due > now)  lessons[modId].ahead++;
           } else if (isMissing) {
             lessons[modId].missing++;
@@ -774,11 +775,14 @@
       });
       studentData[sid].deliveredPerMod = deliveredPerMod;
       studentData[sid].activeMods      = activeMods;
-      const venterPerMod = {};
+      const venterPerMod  = {};
+      const excusedPerMod = {};
       Object.entries(lessons).forEach(([modId, l]) => {
-        if ((l.venter || 0) > 0) venterPerMod[modId] = l.venter;
+        if ((l.venter  || 0) > 0) venterPerMod[modId]  = l.venter;
+        if ((l.excused || 0) > 0) excusedPerMod[modId] = l.excused;
       });
-      studentData[sid].venterPerMod = venterPerMod;
+      studentData[sid].venterPerMod  = venterPerMod;
+      studentData[sid].excusedPerMod = excusedPerMod;
 
       // Direkte telling fra submissions — workflow_state 'submitted'/'pending_review'
       // er Canvas sin kanoniske tilstand for "levert, venter vurdering".
@@ -1112,7 +1116,7 @@
                 showTip(e, buildTooltip(lDays, sDays, d.deadlineDelta,
                   d.deadlineCount, d.godkjent, d.venterVurdering,
                   d.totalt, d.leksjonerEtter, cached, d.hoppetOver, d.skippedPerMod,
-                  d.deliveredPerMod, d.activeMods, d.venterPerMod), tooltipFontSize);
+                  d.deliveredPerMod, d.activeMods, d.venterPerMod, d.excusedPerMod), tooltipFontSize);
 
                 // Hent moduldata hvis ikke cachet
                 if (!moduleCompletionCache.hasOwnProperty(sid)) {
@@ -1130,7 +1134,7 @@
                     tooltipEl.innerHTML = buildTooltip(lDays, sDays, d.deadlineDelta,
                       d.deadlineCount, d.godkjent, d.venterVurdering,
                       d.totalt, d.leksjonerEtter, moduleCompletionCache[sid], d.hoppetOver, d.skippedPerMod,
-                      d.deliveredPerMod, d.activeMods, d.venterPerMod);
+                      d.deliveredPerMod, d.activeMods, d.venterPerMod, d.excusedPerMod);
                     if (lastTipEvent) moveTip(lastTipEvent);
                   }
                 }
@@ -1528,7 +1532,7 @@
     return m ? parseInt(m[0], 10) : null;
   }
 
-  function makeBatterySvg(modules, skippedPerMod = {}, deliveredPerMod = {}, lessonOffset = 0, venterPerMod = {}) {
+  function makeBatterySvg(modules, skippedPerMod = {}, deliveredPerMod = {}, lessonOffset = 0, venterPerMod = {}, excusedPerMod = {}) {
     const labelH = 16;  // plass til leksjonsnummer øverst (45°-rotert tekst)
     const upH = 55, downH = 55;
     const totalH = labelH + upH + downH;
@@ -1615,6 +1619,12 @@
         const cy = midY - r - 2 - d * (r * 2 + dotGap);
         bars += `<circle cx="${cx}" cy="${cy}" r="${r}" fill="white" stroke="#3b6d11" stroke-width="0.8"/>`;
       }
+      // Fritatt-prikkar: stipla grå kant — tydeleg skilt frå venter (oransje) og vurdert (grøn)
+      const excused = (excusedPerMod || {})[mod.id] || 0;
+      for (let e = 0; e < Math.min(excused, maxDots - d); e++, d++) {
+        const cy = midY - r - 2 - d * (r * 2 + dotGap);
+        bars += `<circle cx="${cx}" cy="${cy}" r="${r}" fill="white" stroke="#78909c" stroke-width="1.5" stroke-dasharray="2 1.5"/>`;
+      }
     });
 
     // Prikker under midtlinjen — manglende innleveringer (mørk kant)
@@ -1654,7 +1664,7 @@
       overflow="visible" style="display:block;margin-top:20px;min-width:${W}px">${defs}${bars}</svg>`;
   }
 
-  function buildTooltip(loginDays, subDays, delta, count, godkjent, venterVurdering, totalt, leksjonerEtter, batteryModules, hoppetOver, skippedPerMod, deliveredPerMod, activeMods, venterPerMod) {
+  function buildTooltip(loginDays, subDays, delta, count, godkjent, venterVurdering, totalt, leksjonerEtter, batteryModules, hoppetOver, skippedPerMod, deliveredPerMod, activeMods, venterPerMod, excusedPerMod) {
     const l = loginDays === null
       ? 'Ikke innlogget ennå'
       : `Innlogget: ${loginDays} dag${loginDays === 1 ? '' : 'er'} siden`;
@@ -1703,7 +1713,7 @@
       if (relevant.length > 0) {
         battery = '<div style="margin-top:7px;border-top:0.5px solid #e8e6de;padding-top:5px">'
           + '<div style="font-size:11px;color:#5f5e5a;margin-bottom:4px">Lærestoff sett per leksjon</div>'
-          + makeBatterySvg(batteryModules, skippedPerMod || {}, deliveredPerMod || {}, detectSemesterOffset(), venterPerMod || {})
+          + makeBatterySvg(batteryModules, skippedPerMod || {}, deliveredPerMod || {}, detectSemesterOffset(), venterPerMod || {}, excusedPerMod || {})
           + '</div>';
       }
     }
@@ -1795,7 +1805,7 @@
       name, lDays, sDays, d.deadlineDelta, d.godkjent, d.totalt,
       d.leksjonerEtter, d.venterVurdering, d.hoppetOver,
       d.missingByMod || {}, batData, d.skippedPerMod || {},
-      d.deliveredPerMod || {}, d.activeMods, d.venterPerMod || {}
+      d.deliveredPerMod || {}, d.activeMods, d.venterPerMod || {}, d.excusedPerMod || {}
     );
 
     const blob = await svgToPng(svgStr);
@@ -1815,7 +1825,7 @@
 
   function buildStudentCardSvg(name, lDays, sDays, delta, godkjent, totalt,
       leksjonerEtter, venterVurdering, hoppetOver, missingByMod, batData, skippedPerMod,
-      deliveredPerMod, activeMods, venterPerMod) {
+      deliveredPerMod, activeMods, venterPerMod, excusedPerMod) {
     const W      = 340;
     const pad    = 14;
     const lineH  = 17;
@@ -1861,7 +1871,7 @@
     // Batteridiagram
     let batParts = null;
     if (batData && batData.length > 0 && batData.some(m => m.total > 0)) {
-      const batSvg = makeBatterySvg(batData, skippedPerMod || {}, deliveredPerMod || {}, detectSemesterOffset(), venterPerMod || {});
+      const batSvg = makeBatterySvg(batData, skippedPerMod || {}, deliveredPerMod || {}, detectSemesterOffset(), venterPerMod || {}, excusedPerMod || {});
       batParts = extractSvgContent(batSvg);
     }
 
