@@ -149,7 +149,12 @@
       moduleCompletionCache = cached.data;
       for (const sid of Object.keys(moduleCompletionCache)) {
         if (!studentData[sid] || !Array.isArray(moduleCompletionCache[sid])) continue;
-        studentData[sid].avgViewPct = calcAvgViewPct(moduleCompletionCache[sid], studentData[sid]?.activeMods);
+        // Overskriv berre viss avgViewPct ikkje allereie er rekna ut i denne sesjonen.
+        // Gjer me skriv over med eldre cak_mod_-data kan vi nullstille barar som
+        // backgroundLoadModuleCompletion akkurat har fylt inn.
+        if (studentData[sid].avgViewPct === undefined) {
+          studentData[sid].avgViewPct = calcAvgViewPct(moduleCompletionCache[sid], studentData[sid]?.activeMods);
+        }
         recalcDotsFromModules(sid, moduleCompletionCache[sid]);
       }
     } catch (e) {}
@@ -412,9 +417,10 @@
 
     const cacheKey  = sectionId ? `cak_data_${courseId}_s${sectionId}` : `cak_data_${courseId}`;
     const cacheTime = 15 * 60 * 1000; // 15 min — leksjonsdata (cak_mod_) har eigen 2t-cache
-    if (forceRefresh) {
-      moduleCompletionCache = {}; // tøm minnet — cak_mod_ i storage rørast ikkje
-    }
+    // Merk: moduleCompletionCache rørast IKKJE ved forceRefresh —
+    // moduldata har eigen TTL via cak_mod_ og blir oppdatert av backgroundLoadModuleCompletion.
+    // Å tømme moduleCompletionCache her ville øydeleggje pågåande bakgrunnslasting
+    // og føre til at grøne barar forsvinn når oppdateringa er ferdig.
 
     // Sjekk cache først
     if (!forceRefresh) {
@@ -1623,7 +1629,7 @@
       const excused = (excusedPerMod || {})[mod.id] || 0;
       for (let e = 0; e < Math.min(excused, maxDots - d); e++, d++) {
         const cy = midY - r - 2 - d * (r * 2 + dotGap);
-        bars += `<circle cx="${cx}" cy="${cy}" r="${r}" fill="white" stroke="#78909c" stroke-width="1.5" stroke-dasharray="2 1.5"/>`;
+        bars += `<circle cx="${cx}" cy="${cy}" r="${r}" fill="#b0bec5" stroke="#607d8b" stroke-width="1.2"/>`;
       }
     });
 
