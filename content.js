@@ -111,6 +111,17 @@
     setTimeout(updateOverlay, 4000);
     // Last modulvisningsdata i bakgrunnen — fyller visningsbar etter hvert
     backgroundLoadModuleCompletion();
+    // Bakgrunnsoppdatering: hent alltid ferske aktivitetsdata kort tid etter
+    // den raske cache-visinga — sikrar at sirkel og firkant viser korrekt tilstand
+    // utan å vente opp til 5 minutt på SOFT_REFRESH
+    setTimeout(async () => {
+      try {
+        await fetchData(true);
+        await loadModuleCache();
+        invalidateCache();
+        updateOverlay();
+      } catch (_) {}
+    }, 3000);
   }
 
   // ─── Statsstøtte-badge ────────────────────────────────────────────────────
