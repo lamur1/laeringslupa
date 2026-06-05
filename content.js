@@ -146,16 +146,17 @@
     try {
       const cached = await new Promise(res => chrome.storage.local.get(key, r => res(r[key])));
       if (!cached || (Date.now() - cached.ts) >= cacheTime) return;
-      moduleCompletionCache = cached.data;
-      for (const sid of Object.keys(moduleCompletionCache)) {
-        if (!studentData[sid] || !Array.isArray(moduleCompletionCache[sid])) continue;
-        // Overskriv berre viss avgViewPct ikkje allereie er rekna ut i denne sesjonen.
-        // Gjer me skriv over med eldre cak_mod_-data kan vi nullstille barar som
-        // backgroundLoadModuleCompletion akkurat har fylt inn.
+      // Slå saman i staden for å erstatte: bevar fersk data for elevar der
+      // backgroundLoadModuleCompletion allereie har henta ny data denne sesjonen.
+      // moduleCompletionCache.hasOwnProperty(sid) = fersk henting pågår/ferdig → ikkje overskriv.
+      for (const [sid, data] of Object.entries(cached.data)) {
+        if (moduleCompletionCache.hasOwnProperty(sid)) continue; // fersk sesjondata — behald
+        moduleCompletionCache[sid] = data;
+        if (!studentData[sid] || !Array.isArray(data)) continue;
         if (studentData[sid].avgViewPct === undefined) {
-          studentData[sid].avgViewPct = calcAvgViewPct(moduleCompletionCache[sid], studentData[sid]?.activeMods);
+          studentData[sid].avgViewPct = calcAvgViewPct(data, studentData[sid]?.activeMods);
         }
-        recalcDotsFromModules(sid, moduleCompletionCache[sid]);
+        recalcDotsFromModules(sid, data);
       }
     } catch (e) {}
   }
