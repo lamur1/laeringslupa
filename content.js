@@ -77,7 +77,8 @@
       .catch(() => {});
   })();
 
-  chrome.storage.onChanged.addListener((changes) => {
+  chrome.storage.onChanged.addListener((changes, area) => {
+    if (area !== 'sync') return; // berre brukarinnstillingar, ikkje lokal cache
     for (const key in changes) cfg[key] = changes[key].newValue;
     invalidateCache();
     updateOverlay();
@@ -412,6 +413,10 @@
         );
         if (cached && (Date.now() - cached.ts) < cacheTime) {
           studentData = cached.data;
+          // Gjenopprett subMissingSet frå serialisert array
+          for (const s of Object.values(studentData)) {
+            if (Array.isArray(s.subMissingSet)) s.subMissingSet = new Set(s.subMissingSet);
+          }
           updateCacheStatus(new Date(cached.ts));
           return;
         }
@@ -455,9 +460,15 @@
 
       const courseId2 = getCourseId();
       if (courseId2) {
-        chrome.storage.local.set({
-          [cacheKey]: { ts: Date.now(), data: studentData }
-        });
+        // Serialiser subMissingSet (Set) til array slik at JSON-runden overlever
+        const serialised = {};
+        for (const [sid, s] of Object.entries(studentData)) {
+          serialised[sid] = {
+            ...s,
+            subMissingSet: s.subMissingSet instanceof Set ? [...s.subMissingSet] : []
+          };
+        }
+        chrome.storage.local.set({ [cacheKey]: { ts: Date.now(), data: serialised } });
       }
       updateCacheStatus(new Date());
 
@@ -760,9 +771,12 @@
 
       // Direkte telling fra submissions — workflow_state 'submitted'/'pending_review'
       // er Canvas sin kanoniske tilstand for "levert, venter vurdering".
-      // Dette fanger også oppgaver uten due_at og utenfor modulstruktur.
+      // NB: Canvas kan halde på workflow_state='submitted' sjølv etter at lærar set
+      // karakter (t.d. for NQ/quiz). Ekskluder difor innleveringar som har fått karakter
+      // (grade sett eller graded_at finst) — desse er allereie vurderte.
       const venterVurderingDirekt = subs.filter(s =>
-        s.workflow_state === 'submitted' || s.workflow_state === 'pending_review'
+        (s.workflow_state === 'submitted' || s.workflow_state === 'pending_review') &&
+        !s.grade && !s.graded_at
       ).length;
 
       if (hasAnyLesson) {
@@ -1454,7 +1468,8 @@
   // Oppdater deliveredPerMod/skippedPerMod med completion_requirement.completed per elev.
   // Kjøres etter bakgrunnshentering av moduldata med student_id — gir samme signal som elevvisningen.
   function recalcDotsFromModules(sid, modules) {
-    const missingSet = studentData[sid]?.subMissingSet || new Set();
+    const raw = studentData[sid]?.subMissingSet;
+    const missingSet = raw instanceof Set ? raw : new Set(Object.keys(raw || {}));
     const now = new Date();
     // Bygg due_at-oppslagstabell fra moduleMapGlobal
     const dueDateById = {};
@@ -2198,6 +2213,83 @@
 
     return removed;
   }
+
+  // ─── Lag 3 — Sanntidssensor ───────────────────────────────────────────────
+  // Mottek meldingar frå sensor.js (world: MAIN) og oppdaterer studentData
+  // direkte utan full re-fetch. Gjev umiddelbar visuell respons.
+
+  function patchStudentFromSubmission(sid, sub) {
+    const student = studentData[sid];
+    if (!student) return;
+
+    // Oppdater siste innleveringstidspunkt
+    const ts = sub.submitted_at || sub.graded_at;
+    if (ts) {
+      const d = new Date(ts);
+      if (!student.lastSubmission || d > student.lastSubmission) {
+        student.lastSubmission = d;
+      }
+    }
+
+    // Oppdater manglande-sett (handterer både Set og JSON-deserialisert objekt)
+    if (sub.assignment_id) {
+      if (!(student.subMissingSet instanceof Set)) {
+        student.subMissingSet = new Set(Object.keys(student.subMissingSet || {}));
+      }
+      if (sub.missing) {
+        student.subMissingSet.add(sub.assignment_id);
+      } else {
+        student.subMissingSet.delete(sub.assignment_id);
+      }
+    }
+
+    // Rekn om over/under-streken i batterigrafikken basert på oppdatert subMissingSet
+    if (Array.isArray(moduleCompletionCache[sid])) {
+      recalcDotsFromModules(sid, moduleCompletionCache[sid]);
+    }
+
+    // Oppdater venterVurdering — Canvas kan halde workflow_state='submitted' sjølv etter
+    // vurdering (særleg NQ/quiz). Bruk grade/graded_at for å avgjere om det er vurdert.
+    const erNåVurdert = !!(sub.grade || sub.graded_at);
+    if (erNåVurdert && student.venterVurdering > 0) {
+      student.venterVurdering--;
+    }
+
+    // Fjern cella frå cache → tvingar re-render av nettopp denne cella
+    cellCache.delete(sid);
+    updateOverlay();
+  }
+
+  async function patchStudentFromModuleCompletion(sid) {
+    if (!studentData[sid]) return;
+    try {
+      const modules = await fetchModuleCompletion(sid);
+      moduleCompletionCache[sid] = modules;
+      studentData[sid].avgViewPct = calcAvgViewPct(modules, studentData[sid]?.activeMods);
+      recalcDotsFromModules(sid, modules);
+
+      // Skriv oppdatert modul-cache til storage
+      const courseId = getCourseId();
+      if (courseId) {
+        chrome.storage.local.set({
+          [`cak_mod_${courseId}`]: { ts: Date.now(), data: moduleCompletionCache }
+        });
+      }
+    } catch (_) {}
+    cellCache.delete(sid);
+    updateOverlay();
+  }
+
+  window.addEventListener('message', (event) => {
+    if (event.source !== window || !event.data?._cak) return;
+    const { type, userId, submission } = event.data;
+    if (!userId) return;
+    if (type === 'submission') {
+      patchStudentFromSubmission(userId, submission);
+    } else if (type === 'module_completion') {
+      patchStudentFromModuleCompletion(userId);
+    }
+  });
 
   // ─── Meldingslytter fra popup ──────────────────────────────────────────────
   chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {

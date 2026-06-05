@@ -10,6 +10,7 @@ Chrome-utvidelse (MV3) for Canvas LMS. Legg til ei svevande aktivitetskolonne i 
 | `background.js` | Service worker — alarm kvart 15. min, sender SOFT_REFRESH til opne faner |
 | `popup.html` / `popup.js` | Innstillingspanel (toggle-ar, filtrering, seksjonval) |
 | `manifest.json` | MV3, permissions: storage, tabs, clipboardWrite, alarms |
+| `sensor.js` | Content script (world: MAIN) — wrapper window.fetch, snapper Canvas-svar |
 | `gen_icons.py` | Genererer icon16/48/128.png — køyr ved ikonendring |
 
 ## Cache-arkitektur
@@ -36,9 +37,6 @@ Desse reglane vart brotne 20.04.2026 og kosta ein økt å rette opp:
 
 - **FREMTIDSPRIKKER** = `futureCount` minus allereie leverte — aldri `isStarted`-sjekk.
 
-## Kjente ting å fikse
-
-- Framtidsprikkar skal vere tydelegare (stipla stil)
 
 ## Arkitektur — tre lag (lag 1+2 er implementert, lag 3 er neste)
 
@@ -50,7 +48,7 @@ Desse reglane vart brotne 20.04.2026 og kosta ein økt å rette opp:
 `background.js` køyrer alarm kvart 15. min og sender `SOFT_REFRESH` til alle opne gradebook-faner.
 Content script handterer hentinga og lastar modulcache på nytt etterpå.
 
-### Lag 3 — Sanntidssensor (ikkje implementert enno) 🔜
+### Lag 3 — Sanntidssensor ✅
 
 Dette er det revolusjonerande laget. Canvas er ein SPA — alle endringar går via `fetch()`/`XHR` i nettlesaren. Ein content script med `world: 'MAIN'` kan wrappe `window.fetch` og lytte på alle Canvas sine eigne API-kall.
 

@@ -9,6 +9,12 @@
   "content_scripts": [
     {
       "matches": ["*://*.instructure.com/courses/*/gradebook*"],
+      "js": ["sensor.js"],
+      "world": "MAIN",
+      "run_at": "document_start"
+    },
+    {
+      "matches": ["*://*.instructure.com/courses/*/gradebook*"],
       "js": ["content.js"],
       "run_at": "document_idle"
     }

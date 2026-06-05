@@ -2,12 +2,12 @@
 
 // ─── Læringslupa service worker ───────────────────────────────────────────────
 //
-// Køyrer ein alarm kvart 15. minutt og sender SOFT_REFRESH til alle opne
+// Køyrer ein alarm kvart 5. minutt og sender SOFT_REFRESH til alle opne
 // gradebook-faner. Content script handterer hentinga — berre innleveringsdata
 // (cak_data_) blir oppdatert; leksjonsdata (cak_mod_) ligg urørt i cache.
 
 const ALARM_NAME    = 'lupa_refresh';
-const ALARM_MINUTES = 15;
+const ALARM_MINUTES = 5;
 
 chrome.runtime.onInstalled.addListener(() => {
   chrome.alarms.create(ALARM_NAME, { periodInMinutes: ALARM_MINUTES });
