@@ -1435,22 +1435,16 @@
     }
   }
 
-  function calcAvgViewPct(modules, activeMods) {
+  function calcAvgViewPct(modules, _activeMods) {
     if (!modules || !Array.isArray(modules)) return null;
-    // Snitt basert på leksjoner der eleven har vært aktiv (levert oppgaver)
-    // slik at nullvisning i aktive leksjoner trekker snittet ned — gir ærligere bilde
-    if (activeMods && activeMods.length > 0) {
-      const activeSet = new Set(activeMods);
-      const relevant = modules.filter(m => m.total > 0 && activeSet.has(m.id));
-      if (relevant.length === 0) return null;
-      const sum = relevant.reduce((acc, m) => acc + m.completed / m.total, 0);
-      return Math.round(sum / relevant.length * 100);
-    }
-    // Fallback: kun leksjoner eleven har åpnet
-    const relevant = modules.filter(m => m.total > 0 && m.completed > 0);
-    if (relevant.length === 0) return null;
-    const sum = relevant.reduce((acc, m) => acc + m.completed / m.total, 0);
-    return Math.round(sum / relevant.length * 100);
+    // Snitt visning: sum(fullført must_view-sider) / sum(totalt must_view-sider)
+    // berre over leksjonar eleven faktisk har opna (completed > 0).
+    // Uleste leksjonar inngår ikkje i nemnaren — berre det eleven har byrja på tel.
+    const opened = modules.filter(m => m.total > 0 && m.completed > 0);
+    if (opened.length === 0) return null;
+    const totalItems     = opened.reduce((acc, m) => acc + m.total, 0);
+    const completedItems = opened.reduce((acc, m) => acc + m.completed, 0);
+    return Math.round(completedItems / totalItems * 100);
   }
 
   function updateViewBar(sid) {
