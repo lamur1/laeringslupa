@@ -36,6 +36,7 @@
   let tooltipFontSize = null;
   let lastTipEvent = null;
   let attachedViewport = null;
+  let headerAttachedParent = null;
   let isUpdating = false;
   let sortActive  = false;
   let cellCache      = new Map(); // sid -> cak-cell element
@@ -118,9 +119,10 @@
 
   function getFundingBadge(godkjent) {
     if (!fundingBadgeActive() || godkjent === undefined || godkjent === null) return null;
-    if (godkjent >= 12) return { cls: 'green', label: '✓ ' + godkjent, bg: '#2e7d32' };
-    if (godkjent >= 10) return { cls: 'yellow', label: String(godkjent), bg: '#e6a817' };
-    return { cls: 'red', label: String(godkjent), bg: '#c0392b' };
+    if (godkjent === 0) return null;
+    if (godkjent >= 12) return { cls: 'green', label: '✓ ' + godkjent, color: '#2e7d32', border: '#2e7d32', bg: '#2e7d32' };
+    if (godkjent >= 10) return { cls: 'yellow', label: String(godkjent), color: '#b07d00', border: '#e6a817', bg: '#e6a817' };
+    return { cls: 'red', label: String(godkjent), color: '#c0392b', border: '#c0392b', bg: '#c0392b' };
   }
 
   // ─── Les modulcache frå persistent lagring ───────────────────────────────
@@ -155,25 +157,27 @@
         pointer-events: none;
         overflow: visible;
         border: 1px solid #c0beb5;
-        border-radius: 7px;
+        border-top: none;
+        border-radius: 0 0 7px 7px;
         box-shadow: 0 3px 12px rgba(0,0,0,0.14), 0 1px 4px rgba(0,0,0,0.07);
       }
       .cak-col-header {
         position: absolute;
-        left: 0;
         display: flex;
         align-items: center;
         justify-content: center;
+        gap: 5px;
         background: #eeecea;
-        border-bottom: 1px solid #c0beb5;
+        border: 1px solid #c0beb5;
+        border-radius: 7px 7px 0 0;
+        box-shadow: 0 -3px 8px rgba(0,0,0,0.10), 0 -1px 3px rgba(0,0,0,0.06);
         box-sizing: border-box;
         font-size: 11px;
         color: #5f5e5a;
         font-family: LatoWeb, Lato, sans-serif;
         font-weight: 600;
         letter-spacing: 0.03em;
-        text-transform: uppercase;
-        width: 100%;
+        z-index: 251;
       }
       .cak-cell {
         position: absolute;
@@ -302,9 +306,9 @@
         white-space: nowrap;
         pointer-events: none;
       }
-      .cak-funding-green  { background: #2e7d32; color: #fff; }
-      .cak-funding-yellow { background: #e6a817; color: #fff; }
-      .cak-funding-red    { background: #c0392b; color: #fff; }
+      .cak-funding-green  { background: #fff; color: #2e7d32; border: 1.5px solid #2e7d32; }
+      .cak-funding-yellow { background: #fff; color: #b07d00; border: 1.5px solid #e6a817; }
+      .cak-funding-red    { background: #fff; color: #c0392b; border: 1.5px solid #c0392b; }
       .cak-funding-cell-green  { background: #f2faf2 !important; box-shadow: inset 0 0 0 1.5px #4caf50; }
       .cak-funding-cell-yellow { background: #fffbf0 !important; box-shadow: inset 0 0 0 1.5px #e6a817; }
       .cak-funding-cell-red    { background: #fff5f5 !important; box-shadow: inset 0 0 0 1.5px #c0392b; }
@@ -352,10 +356,11 @@
     moveTip(e);
   }
   function moveTip(e) {
-    const tipH = tooltipEl.offsetHeight;
-    const tipW = tooltipEl.offsetWidth;
-    const top  = e.clientY - tipH - 8;
-    const left = (e.clientX + 14 + tipW > window.innerWidth)
+    const tipH  = tooltipEl.offsetHeight;
+    const tipW  = tooltipEl.offsetWidth;
+    const above = e.clientY - tipH - 8;
+    const top   = above >= 0 ? above : e.clientY + 20;
+    const left  = (e.clientX + 14 + tipW > window.innerWidth)
       ? e.clientX - tipW - 14
       : e.clientX + 14;
     tooltipEl.style.left = left + 'px';
@@ -367,6 +372,7 @@
   function createOverlay() {
     const existing = document.getElementById('cak-overlay');
     if (existing) { existing.remove(); overlayEl = null; attachedViewport = null; }
+    if (headerCellEl) { headerCellEl.remove(); headerCellEl = null; headerAttachedParent = null; }
     overlayEl = document.createElement('div');
     overlayEl.id = 'cak-overlay';
     document.body.appendChild(overlayEl);
@@ -801,7 +807,7 @@
   function invalidateCache() {
     for (const cell of cellCache.values()) cell.remove();
     cellCache.clear();
-    if (headerCellEl) { headerCellEl.remove(); headerCellEl = null; }
+    if (headerCellEl) { headerCellEl.remove(); headerCellEl = null; headerAttachedParent = null; }
   }
 
   // ─── Tegn overlay (smart diff — gjenbruker eksisterende celler) ───────────
@@ -865,27 +871,41 @@
           loadingBarEl = null;
         }
 
-        // Header — opprett én gang, oppdater kun posisjon og tekst
-        const header = findFrozenHeader();
-        if (header) {
-          const viewport = frozenCanvas.parentElement;
-          const vRect    = viewport.getBoundingClientRect();
-          const hRect    = header.getBoundingClientRect();
-          const relTop   = hRect.top - vRect.top + viewport.scrollTop;
+        // Header — separat element i foreldrenoden (utanfor viewport sitt overflow)
+        const canvasHeader = findFrozenHeader();
+        if (canvasHeader) {
+          const viewport   = frozenCanvas.parentElement;
+          const parentEl   = viewport.parentElement;
+          const hRect      = canvasHeader.getBoundingClientRect();
+          const parentRect = parentEl.getBoundingClientRect();
+          const oRect      = overlayEl.getBoundingClientRect();
 
           if (!headerCellEl) {
             headerCellEl = document.createElement('div');
-            headerCellEl.className        = 'cak-col-header';
-            headerCellEl.style.cursor     = 'pointer';
+            headerCellEl.className           = 'cak-col-header';
+            headerCellEl.style.cursor        = 'pointer';
             headerCellEl.style.pointerEvents = 'all';
             headerCellEl.addEventListener('click', toggleSort);
-            overlayEl.appendChild(headerCellEl);
           }
-          headerCellEl.style.top    = relTop + 'px';
+          if (headerAttachedParent !== parentEl) {
+            if (getComputedStyle(parentEl).position === 'static') {
+              parentEl.style.position = 'relative';
+            }
+            parentEl.appendChild(headerCellEl);
+            headerAttachedParent = parentEl;
+          }
+
+          headerCellEl.style.top    = (hRect.top - parentRect.top + parentEl.scrollTop) + 'px';
+          headerCellEl.style.left   = (oRect.left - parentRect.left) + 'px';
+          headerCellEl.style.width  = getColW() + 'px';
           headerCellEl.style.height = hRect.height + 'px';
-          headerCellEl.innerHTML = sortActive
+
+          const iconUrl = chrome.runtime.getURL('icons/icon48.png');
+          const label   = sortActive
             ? 'Prioritet <span style="font-size:10px;margin-left:2px;">↑</span>'
-            : 'Aktivitet';
+            : 'Læringslupa';
+          headerCellEl.innerHTML =
+            `<img src="${iconUrl}" style="width:20px;height:20px;border-radius:4px;flex-shrink:0;">${label}`;
           headerCellEl.title = sortActive
             ? 'Klikk for å tilbakestille sortering'
             : 'Klikk for å sortere etter oppfølgingsbehov';
@@ -1628,7 +1648,7 @@
           : '';
         const badge = getFundingBadge(godkjent);
         const leksjonStr = badge
-          ? `<span style="display:inline-flex;align-items:center;gap:6px;vertical-align:middle"><span style="display:inline-block;background:${badge.bg};color:#fff;font-size:10px;font-weight:700;padding:1px 6px;border-radius:8px;">${badge.label}</span><span style="color:#5f5e5a;font-size:12px;">leksjoner fullført · Terskel: ${terskel}%</span></span>`
+          ? `<span style="display:inline-flex;align-items:center;gap:6px;vertical-align:middle"><span style="display:inline-block;background:#fff;color:${badge.color};border:1.5px solid ${badge.border};font-size:10px;font-weight:700;padding:1px 6px;border-radius:8px;">${badge.label}</span><span style="color:#5f5e5a;font-size:12px;">leksjoner fullført · Terskel: ${terskel}%</span></span>`
           : `${godkjent} av 15 leksjoner Fullført · Terskel: ${terskel}%`;
         d = leksjonStr + `<br>${pendingDot}${pending} ${pendingWord} venter vurdering`;
         if (delta > 0) {

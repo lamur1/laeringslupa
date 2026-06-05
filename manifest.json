@@ -29,7 +29,7 @@
   },
   "web_accessible_resources": [
     {
-      "resources": ["images/globalskolen-logo.png"],
+      "resources": ["images/globalskolen-logo.png", "icons/icon48.png"],
       "matches": ["*://*.instructure.com/*"]
     }
   ]
