@@ -222,7 +222,22 @@
         background: rgba(255, 255, 255, 0.58);
         border: 0.5px solid rgba(211, 209, 199, 0.7);
       }
-      .cak-col-header:hover { background: #e6e4dc; }
+      .cak-col-header-loading {
+        overflow: hidden;
+      }
+      .cak-col-header-loading::after {
+        content: '';
+        position: absolute;
+        top: 0; left: -100%;
+        width: 60%; height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(255,255,255,0.18), transparent);
+        animation: cak-shimmer 1.6s ease-in-out infinite;
+        pointer-events: none;
+      }
+      @keyframes cak-shimmer {
+        0%   { left: -60%; }
+        100% { left: 160%; }
+      }
       .cak-cell:hover {
         background: rgba(59, 109, 17, 0.08) !important;
         box-shadow: inset 3px 0 0 #3b6d11;
@@ -898,14 +913,10 @@
         overlayEl.style.width  = getColW() + 'px';
         overlayEl.style.height = maxBottom + 'px';
 
-        // Laste-indikator øverst i kolonnen
-        if (isLoading && !loadingBarEl) {
-          loadingBarEl = document.createElement('div');
-          loadingBarEl.className = 'cak-loading-bar';
-          overlayEl.appendChild(loadingBarEl);
-        } else if (!isLoading && loadingBarEl) {
-          loadingBarEl.remove();
-          loadingBarEl = null;
+        // Laste-indikator: shimmer på header
+        if (headerCellEl) {
+          if (isLoading) headerCellEl.classList.add('cak-col-header-loading');
+          else headerCellEl.classList.remove('cak-col-header-loading');
         }
 
         // Header — separat element i foreldrenoden (utanfor viewport sitt overflow)
@@ -920,9 +931,8 @@
           if (!headerCellEl) {
             headerCellEl = document.createElement('div');
             headerCellEl.className           = 'cak-col-header';
-            headerCellEl.style.cursor        = 'pointer';
-            headerCellEl.style.pointerEvents = 'all';
-            headerCellEl.addEventListener('click', toggleSort);
+            headerCellEl.style.cursor        = 'default';
+            headerCellEl.style.pointerEvents = 'none';
           }
           if (headerAttachedParent !== parentEl) {
             if (getComputedStyle(parentEl).position === 'static') {
@@ -938,14 +948,9 @@
           headerCellEl.style.height = hRect.height + 'px';
 
           const iconUrl = chrome.runtime.getURL('icons/icon48.png');
-          const label   = sortActive
-            ? 'Prioritet <span style="font-size:10px;margin-left:2px;">↑</span>'
-            : 'Læringslupa';
           headerCellEl.innerHTML =
-            `<img src="${iconUrl}" style="width:20px;height:20px;border-radius:4px;flex-shrink:0;">${label}`;
-          headerCellEl.title = sortActive
-            ? 'Klikk for å tilbakestille sortering'
-            : 'Klikk for å sortere etter oppfølgingsbehov';
+            `<img src="${iconUrl}" style="width:20px;height:20px;border-radius:4px;flex-shrink:0;">Læringslupa`;
+          headerCellEl.title = '';
         }
 
         // Bygg liste over synlige rader med posisjon og student-ID
@@ -1500,21 +1505,18 @@
     const newSkipped   = {};
     modules.forEach(mod => {
       let delivered = 0, missing = 0;
-      const deferred = [];
       (mod.dotItems || []).forEach(di => {
         const isForcedMiss = missingSet.has(di.contentId);
         const dueAt        = dueDateById[di.contentId];
-        const due          = dueAt ? new Date(dueAt) : null;
-        const isPastDue    = !!(due && due <= now);
+        if (!dueAt) return; // Oppgåvar utan datofrist skal ikkje gje prikk
+        const due          = new Date(dueAt);
+        const isPastDue    = due <= now;
         if (di.completed && !isForcedMiss) {
           delivered++;
         } else if (isForcedMiss || isPastDue) {
           missing++;
-        } else if (!dueAt) {
-          deferred.push(di);
         }
       });
-      if ((delivered > 0 || missing > 0) && deferred.length > 0) missing += deferred.length;
       if (delivered > 0) newDelivered[mod.id] = delivered;
       if (missing > 0)   newSkipped[mod.id]   = missing;
     });
@@ -1628,7 +1630,7 @@
       const excused = (excusedPerMod || {})[mod.id] || 0;
       for (let e = 0; e < Math.min(excused, maxDots - d); e++, d++) {
         const cy = midY - r - 2 - d * (r * 2 + dotGap);
-        bars += `<circle cx="${cx}" cy="${cy}" r="${r}" fill="#b0bec5" stroke="#607d8b" stroke-width="1.2"/>`;
+        bars += `<circle cx="${cx}" cy="${cy}" r="${r}" fill="#f9c74f" stroke="#e09b00" stroke-width="1.2"/>`;
       }
     });
 
@@ -2262,11 +2264,12 @@
       if (!(student.subMissingSet instanceof Set)) {
         student.subMissingSet = new Set(Object.keys(student.subMissingSet || {}));
       }
-      if (sub.missing) {
+      if (sub.missing === true) {
         student.subMissingSet.add(sub.assignment_id);
-      } else {
+      } else if (sub.missing === false) {
         student.subMissingSet.delete(sub.assignment_id);
       }
+      // null = Canvas-responsen inneheld ikkje missing-felt — rør ikkje subMissingSet
     }
 
     // Rekn om over/under-streken i batterigrafikken basert på oppdatert subMissingSet

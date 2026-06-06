@@ -42,7 +42,7 @@
                 submitted_at:   data.submitted_at  || null,
                 graded_at:      data.graded_at     || null,
                 workflow_state: data.workflow_state || null,
-                missing:        !!data.missing,
+                missing:        data.missing ?? null,
                 grade:          data.grade         || null,
               }
             }, '*');
