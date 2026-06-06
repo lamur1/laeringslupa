@@ -238,6 +238,22 @@
         0%   { left: -60%; }
         100% { left: 160%; }
       }
+      .cak-col-header-done {
+        overflow: hidden;
+      }
+      .cak-col-header-done::after {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background: rgba(255,255,255,0.25);
+        animation: cak-salute 0.75s ease-out forwards;
+        pointer-events: none;
+      }
+      @keyframes cak-salute {
+        0%   { opacity: 0; }
+        25%  { opacity: 1; }
+        100% { opacity: 0; }
+      }
       .cak-cell:hover {
         background: rgba(59, 109, 17, 0.08) !important;
         box-shadow: inset 3px 0 0 #3b6d11;
@@ -351,13 +367,13 @@
         bottom: 0;
         left: 0;
         width: 100%;
-        height: 3px;
+        height: 2px;
         overflow: hidden;
       }
       .cak-view-bar-fill {
         height: 100%;
-        background: linear-gradient(90deg, #97c459, #3b6d11);
-        border-radius: 0 1.5px 1.5px 0;
+        background: linear-gradient(90deg, #b8d98a, #639922);
+        border-radius: 0 1px 1px 0;
         transition: width 0.5s ease;
         width: 0;
       }
@@ -913,10 +929,16 @@
         overlayEl.style.width  = getColW() + 'px';
         overlayEl.style.height = maxBottom + 'px';
 
-        // Laste-indikator: shimmer på header
+        // Laste-indikator: shimmer på header, salutt når ferdig
         if (headerCellEl) {
-          if (isLoading) headerCellEl.classList.add('cak-col-header-loading');
-          else headerCellEl.classList.remove('cak-col-header-loading');
+          if (isLoading) {
+            headerCellEl.classList.add('cak-col-header-loading');
+            headerCellEl.classList.remove('cak-col-header-done');
+          } else if (headerCellEl.classList.contains('cak-col-header-loading')) {
+            headerCellEl.classList.remove('cak-col-header-loading');
+            headerCellEl.classList.add('cak-col-header-done');
+            setTimeout(() => headerCellEl?.classList.remove('cak-col-header-done'), 750);
+          }
         }
 
         // Header — separat element i foreldrenoden (utanfor viewport sitt overflow)
@@ -1178,7 +1200,7 @@
   // ─── Tidslinje SVG ────────────────────────────────────────────────────────
   function makeTimelineSvg(delta, hasDeadlines) {
     const W = 56, H = 16, mid = W / 2;
-    const barH = 6, barY = (H - barH) / 2;
+    const barH = 3, barY = (H - barH) / 2;
     const margin = 3;
 
     const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
@@ -1255,7 +1277,7 @@
       bar.setAttribute('y', String(barY));
       bar.setAttribute('width', String(mid - margin - 1));
       bar.setAttribute('height', String(barH));
-      bar.setAttribute('rx', '2');
+      bar.setAttribute('rx', '1.5');
       bar.setAttribute('fill', 'url(#cak-bar-red)');
       svg.appendChild(bar);
       return svg;
@@ -1271,7 +1293,7 @@
     const bar = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
     bar.setAttribute('y', String(barY));
     bar.setAttribute('height', String(barH));
-    bar.setAttribute('rx', '2');
+    bar.setAttribute('rx', '1.5');
 
     if (delta > 0) {
       bar.setAttribute('x', String(mid + 2));
@@ -1630,7 +1652,7 @@
       const excused = (excusedPerMod || {})[mod.id] || 0;
       for (let e = 0; e < Math.min(excused, maxDots - d); e++, d++) {
         const cy = midY - r - 2 - d * (r * 2 + dotGap);
-        bars += `<circle cx="${cx}" cy="${cy}" r="${r}" fill="#f9c74f" stroke="#e09b00" stroke-width="1.2"/>`;
+        bars += `<circle cx="${cx}" cy="${cy}" r="${r}" fill="white" stroke="#e09b00" stroke-width="1.8"/>`;
       }
     });
 
