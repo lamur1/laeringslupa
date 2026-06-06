@@ -35,16 +35,26 @@ Desse reglane vart brotne 20.04.2026 og kosta ein økt å rette opp:
 - **GRØNN BAR** = berre `must_view` (Vis-krav) — lærestoff utan dato.
   Filtrer ALLTID på `completion_requirement.type === 'must_view'`.
   Aldri alle `completion_requirement` — då trekkjast innleveringar inn.
+  **Viktig:** Læringslupa bryr seg ikkje om kva Canvas-objekttype det er (oppgåve, wikiside, video, fil) — berre om `completion_requirement.type`. Ei oppgåve med `must_view`-krav vert behandla som ei vanleg leksjon/wikiside, ikkje som ei innlevering. Ho hamnar i grøn bar, ikkje i prikk-logikken.
+
+  | `completion_requirement.type` | Læringslupa behandlar det som |
+  |---|---|
+  | `must_view` | Grøn bar (leksjon) |
+  | `must_submit` | Prikk (innlevering) |
+  | `must_mark_done` | Ignorert |
 
 - **PRIKKER** = `must_submit` (innleveringar med dato).
   Brukar `missing`-flagg og `due_at` frå Canvas API.
+  `dotItems` i `fetchModuleCompletion` filtrerer bort `must_view` og `must_mark_done` — berre `must_submit`-element når `recalcDotsFromModules`.
+  Oppgåvar utan `due_at` skal IKKJE gje prikk — `recalcDotsFromModules` returnerer tidleg med `if (!dueAt) return`.
 
 - **FREMTIDSPRIKKER** = `futureCount` minus allereie leverte — aldri `isStarted`-sjekk.
 
-- **FRITATT** (`excused`) = eigen grå solid prikk (`fill="#b0bec5" stroke="#607d8b"`) over grunnlinja i batteriet.
+- **FRITATT** (`excused`) = eigen prikk med kvitt fyll og gul/oransje kant (`fill="white" stroke="#e09b00" stroke-width="1.8"`) over grunnlinja i batteriet.
   Canvas kan ha `excused: true` samstundes som `workflow_state === 'submitted'` — sjekk alltid BEGGE:
   `const isExcused = sub?.workflow_state === 'excused' || sub?.excused === true;`
   Fritatte innleveringar skal IKKJE teljast i `venter`-teljaren.
+  Fritatte innleveringar skal IKKJE teljast i `deliveredPerMod` (`!isExcused`-sjekk) — elles vert same oppgåve vist som både grøn vurdert-prikk og gul fritatt-prikk (dobbelteljing).
 
 - **SNITT VISNING** = `sum(fullførte must_view-sider) / sum(totale must_view-sider)` berre over leksjonar der `completed > 0`.
   Uleste leksjonar inngår IKKJE i nemnaren. Aldri bruk `activeMods` som filter — det dreg inn leksjonar med 0% visning og gjev for lågt snitt.
