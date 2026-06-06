@@ -802,7 +802,8 @@
             (sub.grade && sub.grade !== null)
           );
           const isForcedMiss = !!(sub && sub.missing === true);
-          if (hasActivity && !isForcedMiss) count++;
+          const isExcused    = !!(sub?.workflow_state === 'excused' || sub?.excused === true);
+          if (hasActivity && !isForcedMiss && !isExcused) count++;
         });
         if (count > 0) deliveredPerMod[modId] = count;
       });
