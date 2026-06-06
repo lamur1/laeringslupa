@@ -39,6 +39,7 @@
   let headerAttachedParent = null;
   let isUpdating = false;
   let sortActive  = false;
+  let wasLoading  = false; // salutt-trigger: true medan loading pågår
   let cellCache      = new Map(); // sid -> cak-cell element
   let headerCellEl   = null;
   let loadingBarEl   = null;
@@ -933,12 +934,17 @@
         // Laste-indikator: shimmer på header, salutt når ferdig
         if (headerCellEl) {
           if (isLoading) {
+            wasLoading = true;
             headerCellEl.classList.add('cak-col-header-loading');
             headerCellEl.classList.remove('cak-col-header-done');
-          } else if (headerCellEl.classList.contains('cak-col-header-loading')) {
+          } else {
             headerCellEl.classList.remove('cak-col-header-loading');
-            headerCellEl.classList.add('cak-col-header-done');
-            setTimeout(() => headerCellEl?.classList.remove('cak-col-header-done'), 750);
+            if (wasLoading) {
+              wasLoading = false;
+              headerCellEl.classList.add('cak-col-header-done');
+              const el = headerCellEl;
+              setTimeout(() => el.classList.remove('cak-col-header-done'), 750);
+            }
           }
         }
 
