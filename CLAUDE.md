@@ -56,6 +56,12 @@ Desse reglane vart brotne 20.04.2026 og kosta ein økt å rette opp:
   Fritatte innleveringar skal IKKJE teljast i `venter`-teljaren.
   Fritatte innleveringar skal IKKJE teljast i `deliveredPerMod` (`!isExcused`-sjekk) — elles vert same oppgåve vist som både grøn vurdert-prikk og gul fritatt-prikk (dobbelteljing).
 
+  **Kritiske implementasjonsreglar for fritatt (lært 07.06.2026):**
+  - `isExcused`-sjekken i `fetchData` sitt leksjon-løkke må vere FØRSTE ledd i if-kjeda — ikkje inne i `if (isDelivered)`. Canvas set ikkje alltid `hasActivity=true` for fritatt utan innlevering, og då blir `isDelivered=false` og excused-teljaren aldri nådd.
+  - `studentData[sid].subExcusedSet` (Set med assignment-ID-ar) må byggast i `fetchData` saman med `subMissingSet`, og brukast i `recalcDotsFromModules` for å ekskludere fritatt frå `deliveredPerMod` og inkludere i `excusedPerMod`.
+  - `recalcDotsFromModules` må skrive `excusedPerMod` — ikkje berre `deliveredPerMod` og `skippedPerMod`.
+  - `makeBatterySvg` sin "Prikker over midtlinjen"-løkke returnerer tidleg med `if (total === 0) return` — denne må sjekke BEGGE: `if (total === 0 && excusedCheck === 0) return`. Fritatte-prikkar er i same blokk og vert aldri teikna om loopen returnerer tidleg pga. 0 leverte.
+
 - **SNITT VISNING** = `sum(fullførte must_view-sider) / sum(totale must_view-sider)` berre over leksjonar der `completed > 0`.
   Uleste leksjonar inngår IKKJE i nemnaren. Aldri bruk `activeMods` som filter — det dreg inn leksjonar med 0% visning og gjev for lågt snitt.
 

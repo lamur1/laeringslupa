@@ -651,6 +651,13 @@
       studentData[sid].subMissingSet = new Set(
         subs.filter(s => s.missing === true).map(s => String(s.assignment_id))
       );
+      // Lagre Fritatt-sett — hindrar dobbeltelling i recalcDotsFromModules
+      // Canvas set completion_requirement.completed=true for fritatte innleveringar,
+      // så utan dette settet ville recalcDotsFromModules telle dei som leverte.
+      studentData[sid].subExcusedSet = new Set(
+        subs.filter(s => s.workflow_state === 'excused' || s.excused === true)
+            .map(s => String(s.assignment_id))
+      );
 
       // Siste innlevering — graded_at og updated_at som fallback for pass_fail/NQ
       const submitted = subs.filter(s =>
@@ -709,7 +716,11 @@
 
           const isDelivered = !isMissing && hasActivity;
 
-          if (isDelivered) {
+          // Fritatt teljast alltid uavhengig av isDelivered — Canvas set ikkje nødvendigvis
+          // hasActivity=true for fritatt utan innlevering (workflow_state='excused', ingen sub).
+          if (isExcused) {
+            lessons[modId].excused = (lessons[modId].excused || 0) + 1;
+          } else if (isDelivered) {
             lessons[modId].delivered++;
             const isGraded = !!(
               sub.workflow_state === 'graded' ||
@@ -729,8 +740,7 @@
             );
             if (isFullfort) lessons[modId].fullfort++;
             if (isFullfort && due <= now) lessons[modId].fullfortPastDue++;
-            if (!isExcused && (sub.workflow_state === 'submitted' || sub.workflow_state === 'pending_review')) lessons[modId].venter++;
-            if (isExcused) lessons[modId].excused = (lessons[modId].excused || 0) + 1;
+            if (sub.workflow_state === 'submitted' || sub.workflow_state === 'pending_review') lessons[modId].venter++;
             if (due > now)  lessons[modId].ahead++;
           } else if (isMissing) {
             lessons[modId].missing++;
@@ -1524,6 +1534,8 @@
   function recalcDotsFromModules(sid, modules) {
     const raw = studentData[sid]?.subMissingSet;
     const missingSet = raw instanceof Set ? raw : new Set(Object.keys(raw || {}));
+    const raw2 = studentData[sid]?.subExcusedSet;
+    const excusedSet = raw2 instanceof Set ? raw2 : new Set(Object.keys(raw2 || {}));
     const now = new Date();
     // Bygg due_at-oppslagstabell fra moduleMapGlobal
     const dueDateById = {};
@@ -1532,15 +1544,19 @@
     });
     const newDelivered = {};
     const newSkipped   = {};
+    const newExcused   = {};
     modules.forEach(mod => {
-      let delivered = 0, missing = 0;
+      let delivered = 0, missing = 0, excused = 0;
       (mod.dotItems || []).forEach(di => {
         const isForcedMiss = missingSet.has(di.contentId);
+        const isExcused    = excusedSet.has(di.contentId);
         const dueAt        = dueDateById[di.contentId];
         if (!dueAt) return; // Oppgåvar utan datofrist skal ikkje gje prikk
         const due          = new Date(dueAt);
         const isPastDue    = due <= now;
-        if (di.completed && !isForcedMiss) {
+        if (isExcused) {
+          excused++;
+        } else if (di.completed && !isForcedMiss) {
           delivered++;
         } else if (isForcedMiss || isPastDue) {
           missing++;
@@ -1548,9 +1564,11 @@
       });
       if (delivered > 0) newDelivered[mod.id] = delivered;
       if (missing > 0)   newSkipped[mod.id]   = missing;
+      if (excused > 0)   newExcused[mod.id]   = excused;
     });
     studentData[sid].deliveredPerMod = newDelivered;
     studentData[sid].skippedPerMod   = newSkipped;
+    studentData[sid].excusedPerMod   = newExcused;
     studentData[sid].hoppetOver      = Object.values(newSkipped).reduce((a, b) => a + b, 0);
   }
 
@@ -1638,9 +1656,11 @@
     });
 
     // Prikker over midtlinjen — leverte oppgaver (oransje kant = venter vurdering, grønn kant = vurdert)
+    // og fritatte oppgaver (gul/oransje kant). Returnerer berre om begge er 0.
     modules.forEach((mod, i) => {
       const total  = (deliveredPerMod || {})[mod.id] || 0;
-      if (total === 0) return;
+      const excusedCheck = (excusedPerMod || {})[mod.id] || 0;
+      if (total === 0 && excusedCheck === 0) return;
       const venter  = (venterPerMod || {})[mod.id] || 0;
       const vurdert = Math.max(0, total - venter);
       const cx      = i * (barW + gap) + barW / 2;
