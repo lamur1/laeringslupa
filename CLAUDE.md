@@ -50,7 +50,7 @@ Desse reglane vart brotne 20.04.2026 og kosta ein økt å rette opp:
 
 - **FREMTIDSPRIKKER** = `futureCount` minus allereie leverte — aldri `isStarted`-sjekk.
 
-- **FRITATT** (`excused`) = eigen prikk med kvitt fyll og gul/oransje kant (`fill="white" stroke="#e09b00" stroke-width="1.8"`) over grunnlinja i batteriet.
+- **FRITATT** (`excused`) = eigen prikk med kvitt fyll og lilla kant (`fill="white" stroke="#7B3FA5" stroke-width="1.8"`) over grunnlinja i batteriet.
   Canvas kan ha `excused: true` samstundes som `workflow_state === 'submitted'` — sjekk alltid BEGGE:
   `const isExcused = sub?.workflow_state === 'excused' || sub?.excused === true;`
   Fritatte innleveringar skal IKKJE teljast i `venter`-teljaren.
@@ -76,6 +76,12 @@ Desse reglane vart brotne 20.04.2026 og kosta ein økt å rette opp:
 ### Lag 2 — Service worker ✅
 `background.js` køyrer alarm kvart 5. min og sender `SOFT_REFRESH` til alle opne gradebook-faner.
 Content script handterer hentinga og lastar modulcache på nytt etterpå.
+
+### Lag 2b — Cache-forvarming på alle kurs-sider ✅
+`content.js` er registrert på `*/courses/*/*` (ekskl. gradebook) i tillegg til gradebook.
+På ikkje-gradebook-sider (moduler, oppgåver, SpeedGrader osb.) køyrer berre `fetchData(false)` — ingen UI.
+Resultatet: `cak_data_` er allereie varm når lærar navigerer til gradebook, uavhengig av kva side dei kom frå.
+Course ID hentast frå URL (`/courses/:id/...`) — kvar kurs får si eiga cache-nøkkel automatisk.
 
 ### Lag 3 — Sanntidssensor ✅
 

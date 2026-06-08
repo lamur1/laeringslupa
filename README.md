@@ -38,7 +38,7 @@ Diagrammet i hover-vinduet viser én søyle per leksjon:
 - **Grønn søyle** → andel av Canvas-sider med visningskrav eleven har fullført
 - **Grå skravering** → fristen passert, ikke lest
 - **Stiplet kontur** → fremtidig leksjon
-- **Prikker over streken** → innleveringer levert (oransje = venter vurdering, grønn = vurdert, grå = fritatt)
+- **Prikker over streken** → innleveringer levert (oransje = venter vurdering, grønn = vurdert, lilla = fritatt)
 - **Sirkler under streken** → innleveringer som mangler
 
 **Snitt visning** beregnes som `sum(fullførte sider) / sum(totale sider)` kun for leksjoner eleven har åpnet.
@@ -64,11 +64,13 @@ Klikk utvidelsesikonet for å åpne innstillingspanelet.
 ## Teknisk
 
 - Manifest V3
-- Aktiveres kun på `*.instructure.com/courses/*/gradebook*`
+- Full UI aktiveres på `*.instructure.com/courses/*/gradebook*`
+- Cache-forvarming aktiveres på alle kurs-sider (`/courses/*/*`) — kolonnen er klar når lærer åpner gradebook, selv om de kom fra moduler, oppgavelisten eller SpeedGrader
 - Data caches lokalt i `chrome.storage.local`:
   - Innleveringer og aktivitet: 15 min (`cak_data_`)
   - Leksjonsvisningsdata: 1 time (`cak_mod_`)
 - Sanntidssensor (`sensor.js`) wrapper `window.fetch` og oppdager når lærer setter karakter — kolonnen oppdateres umiddelbart uten sideopplasting
+- Cache overlever sideopplasting — `chrome.storage.local` tømmes ikke ved refresh
 
 ---
 

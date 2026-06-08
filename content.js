@@ -42,6 +42,7 @@
   let wasLoading  = false; // salutt-trigger: true medan loading pågår
   let cellCache      = new Map(); // sid -> cak-cell element
   let headerCellEl   = null;
+  let countdownBarEl = null;
   let loadingBarEl   = null;
   let isLoading      = false;
   let moduleCompletionCache = {}; // sid -> [{id, name, total, completed}] | false
@@ -60,7 +61,23 @@
 
   chrome.storage.sync.get(DEFAULTS, (saved) => {
     cfg = { ...DEFAULTS, ...saved };
-    waitForGradebook();
+    if (/\/gradebook/.test(location.pathname)) {
+      waitForGradebook();
+    } else {
+      // Ikkje-gradebook-side — varm cachen berre om lærar har lærarrolle i kurset
+      const cId = location.pathname.match(/\/courses\/(\d+)/)?.[1];
+      if (cId) {
+        fetch(`/api/v1/courses/${cId}?include[]=enrollments`)
+          .then(r => r.ok ? r.json() : null)
+          .then(course => {
+            const isTeacher = course?.enrollments?.some(
+              e => ['teacher', 'ta', 'designer'].includes(e.type)
+            );
+            if (isTeacher) fetchData(false).catch(() => {});
+          })
+          .catch(() => {});
+      }
+    }
   });
 
   // Hent seksjoner direkte fra Canvas API og cache i chrome.storage.local.
@@ -254,6 +271,14 @@
         0%   { opacity: 0; }
         25%  { opacity: 1; }
         100% { opacity: 0; }
+      }
+      .cak-countdown-bar {
+        position: absolute;
+        bottom: 0; left: 0;
+        height: 2px;
+        background: #4eca8b;
+        width: 100%;
+        pointer-events: none;
       }
       .cak-cell:hover {
         background: rgba(59, 109, 17, 0.08) !important;
@@ -891,6 +916,28 @@
   }
 
   // ─── Tegn overlay (smart diff — gjenbruker eksisterende celler) ───────────
+  function startCountdown() {
+    if (!countdownBarEl) return;
+    chrome.alarms.get('lupa_refresh', alarm => {
+      if (!alarm) return;
+      const remaining = Math.max(0, alarm.scheduledTime - Date.now());
+      countdownBarEl.style.transition = 'none';
+      countdownBarEl.style.width = '100%';
+      void countdownBarEl.offsetWidth; // tving reflow
+      countdownBarEl.style.transition = `width ${remaining}ms linear`;
+      countdownBarEl.style.width = '0%';
+    });
+  }
+
+  function stopCountdown() {
+    if (!countdownBarEl) return;
+    const w = getComputedStyle(countdownBarEl).width;
+    const parentW = countdownBarEl.parentElement?.offsetWidth || 1;
+    const pct = (parseFloat(w) / parentW * 100).toFixed(2);
+    countdownBarEl.style.transition = 'none';
+    countdownBarEl.style.width = pct + '%';
+  }
+
   function updateOverlay() {
     if (!overlayEl || isUpdating) return;
     isUpdating = true;
@@ -947,13 +994,17 @@
             wasLoading = true;
             headerCellEl.classList.add('cak-col-header-loading');
             headerCellEl.classList.remove('cak-col-header-done');
+            stopCountdown();
           } else {
             headerCellEl.classList.remove('cak-col-header-loading');
             if (wasLoading) {
               wasLoading = false;
               headerCellEl.classList.add('cak-col-header-done');
               const el = headerCellEl;
-              setTimeout(() => el.classList.remove('cak-col-header-done'), 750);
+              setTimeout(() => {
+                el.classList.remove('cak-col-header-done');
+                startCountdown();
+              }, 750);
             }
           }
         }
@@ -972,6 +1023,10 @@
             headerCellEl.className           = 'cak-col-header';
             headerCellEl.style.cursor        = 'default';
             headerCellEl.style.pointerEvents = 'none';
+            const iconUrl = chrome.runtime.getURL('icons/icon48.png');
+            headerCellEl.innerHTML =
+              `<img src="${iconUrl}" style="width:20px;height:20px;border-radius:4px;flex-shrink:0;">Læringslupa<div class="cak-countdown-bar"></div>`;
+            countdownBarEl = headerCellEl.querySelector('.cak-countdown-bar');
           }
           if (headerAttachedParent !== parentEl) {
             if (getComputedStyle(parentEl).position === 'static') {
@@ -986,9 +1041,6 @@
           headerCellEl.style.width  = getColW() + 'px';
           headerCellEl.style.height = hRect.height + 'px';
 
-          const iconUrl = chrome.runtime.getURL('icons/icon48.png');
-          headerCellEl.innerHTML =
-            `<img src="${iconUrl}" style="width:20px;height:20px;border-radius:4px;flex-shrink:0;">Læringslupa`;
           headerCellEl.title = '';
         }
 
