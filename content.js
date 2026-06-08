@@ -1679,7 +1679,7 @@
       const excused = (excusedPerMod || {})[mod.id] || 0;
       for (let e = 0; e < Math.min(excused, maxDots - d); e++, d++) {
         const cy = midY - r - 2 - d * (r * 2 + dotGap);
-        bars += `<circle cx="${cx}" cy="${cy}" r="${r}" fill="white" stroke="#e09b00" stroke-width="1.8"/>`;
+        bars += `<circle cx="${cx}" cy="${cy}" r="${r}" fill="white" stroke="#7B3FA5" stroke-width="1.8"/>`;
       }
     });
 
