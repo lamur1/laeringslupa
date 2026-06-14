@@ -1646,7 +1646,7 @@
     const upH = 55, downH = 55;
     const totalH = labelH + upH + downH;
     const midY   = labelH + upH;
-    const barW = 7, gap = 11;
+    const barW = 9, gap = 11;
     const now  = new Date();
     const n    = modules.length;
     const W    = n * (barW + gap) - gap;
