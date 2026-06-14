@@ -42,8 +42,9 @@
   let wasLoading  = false; // salutt-trigger: true medan loading pågår
   let cellCache      = new Map(); // sid -> cak-cell element
   let headerCellEl   = null;
-  let countdownBarEl = null;
-  let loadingBarEl   = null;
+  let countdownBarEl      = null;
+  let countdownIntervalId = null;
+  let loadingBarEl        = null;
   let isLoading      = false;
   let moduleCompletionCache = {}; // sid -> [{id, name, total, completed}] | false
   let freshModuleSids       = new Set(); // sids som er henta fersk frå API denne sesjonen
@@ -509,6 +510,7 @@
 
     try {
       isLoading = true;
+      wasLoading = true;
 
       // Fase 1: rask data — vis ringer med en gang
       const [enrollments, assignments, modules] = await Promise.all([
@@ -918,24 +920,25 @@
   // ─── Tegn overlay (smart diff — gjenbruker eksisterende celler) ───────────
   function startCountdown() {
     if (!countdownBarEl) return;
+    if (countdownIntervalId) { clearInterval(countdownIntervalId); countdownIntervalId = null; }
     chrome.alarms.get('lupa_refresh', alarm => {
       if (!alarm) return;
-      const remaining = Math.max(0, alarm.scheduledTime - Date.now());
+      const endTime       = alarm.scheduledTime;
+      const totalDuration = 5 * 60 * 1000; // 5 min i ms
+      function tick() {
+        if (!countdownBarEl) { clearInterval(countdownIntervalId); countdownIntervalId = null; return; }
+        const rem = Math.max(0, endTime - Date.now());
+        countdownBarEl.style.width = (rem / totalDuration * 100) + '%';
+        if (rem <= 0) { clearInterval(countdownIntervalId); countdownIntervalId = null; }
+      }
       countdownBarEl.style.transition = 'none';
-      countdownBarEl.style.width = '100%';
-      void countdownBarEl.offsetWidth; // tving reflow
-      countdownBarEl.style.transition = `width ${remaining}ms linear`;
-      countdownBarEl.style.width = '0%';
+      tick(); // sett riktig startbreidde med ein gong
+      countdownIntervalId = setInterval(tick, 1000);
     });
   }
 
   function stopCountdown() {
-    if (!countdownBarEl) return;
-    const w = getComputedStyle(countdownBarEl).width;
-    const parentW = countdownBarEl.parentElement?.offsetWidth || 1;
-    const pct = (parseFloat(w) / parentW * 100).toFixed(2);
-    countdownBarEl.style.transition = 'none';
-    countdownBarEl.style.width = pct + '%';
+    if (countdownIntervalId) { clearInterval(countdownIntervalId); countdownIntervalId = null; }
   }
 
   function updateOverlay() {
