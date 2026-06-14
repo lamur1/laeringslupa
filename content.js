@@ -277,7 +277,7 @@
         position: absolute;
         bottom: 0; left: 0;
         height: 2px;
-        background: #4eca8b;
+        background: #e8a020;
         width: 100%;
         pointer-events: none;
       }

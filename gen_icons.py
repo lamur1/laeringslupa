@@ -47,8 +47,8 @@ def draw_icon(size):
 
     # Fargar — variant 3: Kol + limegrøn
     BG      = [26,  26,  26,  255]   # #1a1a1a svart
-    WHITE   = [105, 240, 174, 255]   # #69f0ae limegrøn
-    LENS_BG = [105, 240, 174, 24 ]   # limegrøn med låg opacity (linsefyll)
+    WHITE   = [240, 228, 192, 255]   # #f0e4c0 varm krem
+    LENS_BG = [240, 228, 192, 24 ]   # varm krem med låg opacity (linsefyll)
     TRANSP  = [0,   0,   0,   0]
 
     # Geometri (normalisert til 128px-koordinatar, skalert med s)
