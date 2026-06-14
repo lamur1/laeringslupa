@@ -921,9 +921,9 @@
   function startCountdown() {
     if (!countdownBarEl) return;
     if (countdownIntervalId) { clearInterval(countdownIntervalId); countdownIntervalId = null; }
-    chrome.alarms.get('lupa_refresh', alarm => {
-      if (!alarm) return;
-      const endTime       = alarm.scheduledTime;
+    chrome.runtime.sendMessage({ type: 'GET_ALARM_TIME' }, response => {
+      if (!response || !response.scheduledTime) return;
+      const endTime       = response.scheduledTime;
       const totalDuration = 5 * 60 * 1000; // 5 min i ms
       function tick() {
         if (!countdownBarEl) { clearInterval(countdownIntervalId); countdownIntervalId = null; return; }
@@ -932,7 +932,7 @@
         if (rem <= 0) { clearInterval(countdownIntervalId); countdownIntervalId = null; }
       }
       countdownBarEl.style.transition = 'none';
-      tick(); // sett riktig startbreidde med ein gong
+      tick();
       countdownIntervalId = setInterval(tick, 1000);
     });
   }

@@ -22,6 +22,15 @@ chrome.runtime.onStartup.addListener(() => {
   });
 });
 
+chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
+  if (msg.type === 'GET_ALARM_TIME') {
+    chrome.alarms.get(ALARM_NAME, alarm => {
+      sendResponse({ scheduledTime: alarm ? alarm.scheduledTime : null });
+    });
+    return true; // async svar
+  }
+});
+
 chrome.alarms.onAlarm.addListener(async (alarm) => {
   if (alarm.name !== ALARM_NAME) return;
 
