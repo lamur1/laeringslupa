@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Læringslupa",
-  "version": "2026.6.9.0125",
+  "version": "2026.6.14.0917",
   "description": "Viser innloggings- og innleveringsaktivitet direkte i Canvas vurderingsoversikt.",
   "permissions": ["storage", "tabs", "clipboardWrite", "alarms"],
   "background": { "service_worker": "background.js" },
@@ -27,7 +27,7 @@
   ],
   "action": {
     "default_popup": "popup.html",
-    "default_title": "Canvas Aktivitetskolonne",
+    "default_title": "Læringslupa",
     "default_icon": {
       "16": "icons/icon16.png",
       "48": "icons/icon48.png",
