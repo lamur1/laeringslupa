@@ -797,8 +797,6 @@
       Object.entries(lessons).forEach(([modId, l]) => {
         if (l.total === 0) return;
         const completionFullfort = l.pastDueDenom > 0 ? l.fullfortPastDue / l.pastDueDenom : 0;
-        // CAK-DEBUG: fjern etter feilsøking
-        if (l.pastDue > 0) console.log('[CAK]', moduleNameMapGlobal[modId] || modId, 'denom:', l.pastDueDenom, 'fullfort:', l.fullfortPastDue, 'delivered:', l.delivered, 'completionFullfort:', completionFullfort.toFixed(2));
 
         if (l.pastDueDenom > 0) {
           leksjonerMedPassertFrist++;
@@ -1390,10 +1388,11 @@
   }
 
   function activityCellTint(leksjonerEtter, hasDeadlines) {
-    // Ingen frister i kurset → ingen trafikklys-farge
-    if (leksjonerEtter === null && !hasDeadlines) return null;
-    // Har frister men ikke levert / mangler grunnlag → rød
-    if (leksjonerEtter === null) return 'rgba(198, 40, 40, 0.20)';
+    // «Leksjoner etter» finnes bare når en frist er passert. Både null (eleven har
+    // levert noe, men ingen frist er passert) og undefined (eleven har ikke levert
+    // noe ennå) betyr «ingen er etter» → ingen trafikklys-farge. Rød skal kun komme
+    // av et faktisk positivt etterslep, aldri av manglende/ukjent grunnlag.
+    if (leksjonerEtter == null) return null;
 
     // 0-1 etter → ingen farge, 2 → grønn, 3 → gul, 4+ → rød
     if (leksjonerEtter <= 1)  return null;
@@ -2097,12 +2096,15 @@
   function colorCategory(sid) {
     const data  = studentData[sid] || {};
     const lEtter = data.leksjonerEtter;
-    const hasDL  = data.hasDeadlines;
-    if (lEtter === null && !hasDL) return null; // ingen frister
-    if (lEtter === null)           return 'red'; // frister men ikke levert
-    if (lEtter <= 1)               return null;  // i rute
-    if (lEtter === 2)              return 'green';
-    if (lEtter === 3)              return 'yellow';
+    // «Leksjoner etter» finnes bare når en frist faktisk er passert. Er ingen frist
+    // passert ennå, er lEtter null (eleven har levert noe) eller undefined (eleven
+    // har ikke levert noe ennå) — begge betyr «ingen kan være etter ennå», altså
+    // nøytral, ikke rød. Et reelt etterslep gir alltid et positivt tall (leksjoner
+    // med passert frist minus godkjente), så null/undefined er aldri «bakpå».
+    if (lEtter == null) return null; // ingen passerte frister → ingen kategori
+    if (lEtter <= 1)    return null; // i rute
+    if (lEtter === 2)   return 'green';
+    if (lEtter === 3)   return 'yellow';
     return 'red'; // 4+
   }
 
