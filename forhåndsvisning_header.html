@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="no">
+<head>
+<meta charset="UTF-8">
+<title>Læringslupa — header-bakgrunn</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: LatoWeb, Lato, -apple-system, sans-serif;
+    background: #e8e6df;
+    padding: 40px 32px 60px;
+    color: #2d3b45;
+  }
+
+  h1 {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.10em;
+    text-transform: uppercase;
+    color: #888;
+    margin-bottom: 36px;
+  }
+
+  .row-variants {
+    display: flex;
+    gap: 28px;
+    flex-wrap: wrap;
+    align-items: flex-start;
+  }
+
+  .card {
+    background: #fff;
+    border-radius: 14px;
+    box-shadow: 0 2px 14px rgba(0,0,0,0.11);
+    overflow: hidden;
+    width: 200px;
+  }
+
+  .card-label {
+    padding: 12px 14px 4px;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+    color: #888;
+  }
+
+  .card-desc {
+    padding: 3px 14px 10px;
+    font-size: 10px;
+    color: #bbb;
+    line-height: 1.5;
+    border-bottom: 1px solid #f0f0f0;
+  }
+
+  /* ── Simulert kolonne ─────────── */
+  .col {
+    width: 100%;
+  }
+
+  .col-header {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    height: 38px;
+    border-bottom: 1px solid rgba(0,0,0,0.15);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+  }
+
+  .col-header img {
+    width: 20px;
+    height: 20px;
+    border-radius: 4px;
+  }
+
+  .cell {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    padding: 0 6px;
+    height: 35px;
+    border-bottom: 0.5px solid #eceae2;
+    background: #f7f5f0;
+    width: 100%;
+  }
+
+  .cell:last-child {
+    border-bottom: none;
+    border-radius: 0 0 14px 14px;
+  }
+
+  /* ── Visuelle element ─────────── */
+  .ring { width: 16px; height: 16px; border-radius: 50%; flex-shrink: 0; }
+  .ring-full { background: #3d8b37; }
+  .ring-half { background: conic-gradient(#3d8b37 0% 50%, #d0cdc5 50% 100%); }
+  .ring-grey { background: #d0cdc5; }
+
+  .mark { width: 13px; height: 13px; border-radius: 2px; flex-shrink: 0; }
+  .mark-out-red  { border: 1.5px solid #c0392b; background: #fdecea; }
+  .mark-out-grey { border: 1.5px solid #aaa; background: transparent; }
+
+  .bar-wrap { flex: 1; height: 4px; background: #d8d5cc; border-radius: 2px; position: relative; min-width: 20px; }
+  .bar-fill { height: 100%; border-radius: 2px; background: linear-gradient(90deg, #97c459, #3b6d11); }
+  .bar-marker { position: absolute; top: -3px; width: 2px; height: 10px; background: #888; border-radius: 1px; }
+
+  .badge {
+    margin-left: auto;
+    background: #fff;
+    font-size: 9px;
+    font-weight: 700;
+    padding: 1px 5px;
+    border-radius: 8px;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  .badge-green  { color: #2e7d32; border: 1.5px solid #2e7d32; }
+  .badge-red    { color: #c0392b; border: 1.5px solid #c0392b; }
+</style>
+</head>
+<body>
+
+<h1>Læringslupa — header-bakgrunn</h1>
+
+<div class="row-variants">
+
+  <!-- NOVERANDE -->
+  <div class="card">
+    <div class="card-label">Noverande</div>
+    <div class="card-desc">#eeecea · mørk tekst</div>
+    <div class="col">
+      <div class="col-header" style="background:#eeecea; color:#5f5e5a; border-color:#c0beb5;">
+        <img src="icons/icon48.png"> Læringslupa
+      </div>
+      <div class="cell"><div class="ring ring-full"></div><div class="mark mark-out-red"></div><div class="bar-wrap"><div class="bar-fill" style="width:80%"></div><div class="bar-marker" style="left:65%"></div></div><span class="badge badge-green">✓ 13</span></div>
+      <div class="cell"><div class="ring ring-grey"></div><div class="mark mark-out-red"></div><div class="bar-wrap"><div class="bar-fill" style="width:10%"></div><div class="bar-marker" style="left:65%"></div></div><span class="badge badge-green">✓ 14</span></div>
+      <div class="cell"><div class="ring ring-half"></div><div class="mark mark-out-grey"></div><div class="bar-wrap"><div class="bar-fill" style="width:50%"></div><div class="bar-marker" style="left:65%"></div></div><span class="badge badge-green">✓ 14</span></div>
+      <div class="cell"><div class="ring ring-half"></div><div class="mark mark-out-grey"></div><div class="bar-wrap"><div class="bar-fill" style="width:48%"></div><div class="bar-marker" style="left:65%"></div></div><span class="badge badge-red">4</span></div>
+    </div>
+  </div>
+
+  <!-- ALT 1a: Canvas-mørk -->
+  <div class="card">
+    <div class="card-label">1a — Canvas-mørk</div>
+    <div class="card-desc">#2d3b45 · kvit tekst</div>
+    <div class="col">
+      <div class="col-header" style="background:#2d3b45; color:#fff;">
+        <img src="icons/icon48.png"> Læringslupa
+      </div>
+      <div class="cell"><div class="ring ring-full"></div><div class="mark mark-out-red"></div><div class="bar-wrap"><div class="bar-fill" style="width:80%"></div><div class="bar-marker" style="left:65%"></div></div><span class="badge badge-green">✓ 13</span></div>
+      <div class="cell"><div class="ring ring-grey"></div><div class="mark mark-out-red"></div><div class="bar-wrap"><div class="bar-fill" style="width:10%"></div><div class="bar-marker" style="left:65%"></div></div><span class="badge badge-green">✓ 14</span></div>
+      <div class="cell"><div class="ring ring-half"></div><div class="mark mark-out-grey"></div><div class="bar-wrap"><div class="bar-fill" style="width:50%"></div><div class="bar-marker" style="left:65%"></div></div><span class="badge badge-green">✓ 14</span></div>
+      <div class="cell"><div class="ring ring-half"></div><div class="mark mark-out-grey"></div><div class="bar-wrap"><div class="bar-fill" style="width:48%"></div><div class="bar-marker" style="left:65%"></div></div><span class="badge badge-red">4</span></div>
+    </div>
+  </div>
+
+  <!-- ALT 1b: Nær-svart (matchar ikonet) -->
+  <div class="card">
+    <div class="card-label">1b — Ikonsvart</div>
+    <div class="card-desc">#1a1f1a · kvit tekst</div>
+    <div class="col">
+      <div class="col-header" style="background:#1a1f1a; color:#fff;">
+        <img src="icons/icon48.png"> Læringslupa
+      </div>
+      <div class="cell"><div class="ring ring-full"></div><div class="mark mark-out-red"></div><div class="bar-wrap"><div class="bar-fill" style="width:80%"></div><div class="bar-marker" style="left:65%"></div></div><span class="badge badge-green">✓ 13</span></div>
+      <div class="cell"><div class="ring ring-grey"></div><div class="mark mark-out-red"></div><div class="bar-wrap"><div class="bar-fill" style="width:10%"></div><div class="bar-marker" style="left:65%"></div></div><span class="badge badge-green">✓ 14</span></div>
+      <div class="cell"><div class="ring ring-half"></div><div class="mark mark-out-grey"></div><div class="bar-wrap"><div class="bar-fill" style="width:50%"></div><div class="bar-marker" style="left:65%"></div></div><span class="badge badge-green">✓ 14</span></div>
+      <div class="cell"><div class="ring ring-half"></div><div class="mark mark-out-grey"></div><div class="bar-wrap"><div class="bar-fill" style="width:48%"></div><div class="bar-marker" style="left:65%"></div></div><span class="badge badge-red">4</span></div>
+    </div>
+  </div>
+
+  <!-- ALT 2: Djup grøn -->
+  <div class="card">
+    <div class="card-label">2 — Djup grøn</div>
+    <div class="card-desc">#1b3a1e · kvit tekst</div>
+    <div class="col">
+      <div class="col-header" style="background:#1b3a1e; color:#fff;">
+        <img src="icons/icon48.png"> Læringslupa
+      </div>
+      <div class="cell"><div class="ring ring-full"></div><div class="mark mark-out-red"></div><div class="bar-wrap"><div class="bar-fill" style="width:80%"></div><div class="bar-marker" style="left:65%"></div></div><span class="badge badge-green">✓ 13</span></div>
+      <div class="cell"><div class="ring ring-grey"></div><div class="mark mark-out-red"></div><div class="bar-wrap"><div class="bar-fill" style="width:10%"></div><div class="bar-marker" style="left:65%"></div></div><span class="badge badge-green">✓ 14</span></div>
+      <div class="cell"><div class="ring ring-half"></div><div class="mark mark-out-grey"></div><div class="bar-wrap"><div class="bar-fill" style="width:50%"></div><div class="bar-marker" style="left:65%"></div></div><span class="badge badge-green">✓ 14</span></div>
+      <div class="cell"><div class="ring ring-half"></div><div class="mark mark-out-grey"></div><div class="bar-wrap"><div class="bar-fill" style="width:48%"></div><div class="bar-marker" style="left:65%"></div></div><span class="badge badge-red">4</span></div>
+    </div>
+  </div>
+
+  <!-- ALT 3: Lys grøntint -->
+  <div class="card">
+    <div class="card-label">3 — Lys grøntint</div>
+    <div class="card-desc">#edf7ed · mørk grøn tekst</div>
+    <div class="col">
+      <div class="col-header" style="background:#edf7ed; color:#1b3a1e; border-color:#b8dbb9;">
+        <img src="icons/icon48.png"> Læringslupa
+      </div>
+      <div class="cell"><div class="ring ring-full"></div><div class="mark mark-out-red"></div><div class="bar-wrap"><div class="bar-fill" style="width:80%"></div><div class="bar-marker" style="left:65%"></div></div><span class="badge badge-green">✓ 13</span></div>
+      <div class="cell"><div class="ring ring-grey"></div><div class="mark mark-out-red"></div><div class="bar-wrap"><div class="bar-fill" style="width:10%"></div><div class="bar-marker" style="left:65%"></div></div><span class="badge badge-green">✓ 14</span></div>
+      <div class="cell"><div class="ring ring-half"></div><div class="mark mark-out-grey"></div><div class="bar-wrap"><div class="bar-fill" style="width:50%"></div><div class="bar-marker" style="left:65%"></div></div><span class="badge badge-green">✓ 14</span></div>
+      <div class="cell"><div class="ring ring-half"></div><div class="mark mark-out-grey"></div><div class="bar-wrap"><div class="bar-fill" style="width:48%"></div><div class="bar-marker" style="left:65%"></div></div><span class="badge badge-red">4</span></div>
+    </div>
+  </div>
+
+  <!-- ALT 4: Midnattsblå-grøn -->
+  <div class="card">
+    <div class="card-label">4 — Midnatt</div>
+    <div class="card-desc">#0f2318 · limegrøn tekst</div>
+    <div class="col">
+      <div class="col-header" style="background:#0f2318; color:#97c459;">
+        <img src="icons/icon48.png"> Læringslupa
+      </div>
+      <div class="cell"><div class="ring ring-full"></div><div class="mark mark-out-red"></div><div class="bar-wrap"><div class="bar-fill" style="width:80%"></div><div class="bar-marker" style="left:65%"></div></div><span class="badge badge-green">✓ 13</span></div>
+      <div class="cell"><div class="ring ring-grey"></div><div class="mark mark-out-red"></div><div class="bar-wrap"><div class="bar-fill" style="width:10%"></div><div class="bar-marker" style="left:65%"></div></div><span class="badge badge-green">✓ 14</span></div>
+      <div class="cell"><div class="ring ring-half"></div><div class="mark mark-out-grey"></div><div class="bar-wrap"><div class="bar-fill" style="width:50%"></div><div class="bar-marker" style="left:65%"></div></div><span class="badge badge-green">✓ 14</span></div>
+      <div class="cell"><div class="ring ring-half"></div><div class="mark mark-out-grey"></div><div class="bar-wrap"><div class="bar-fill" style="width:48%"></div><div class="bar-marker" style="left:65%"></div></div><span class="badge badge-red">4</span></div>
+    </div>
+  </div>
+
+</div>
+
+<div style="margin-top:40px; font-size:10px; color:#aaa; line-height:1.9;">
+  Ikonet lastar berre om du opnar fila frå rotmappa til utvidinga.
+</div>
+
+</body>
+</html>

@@ -1,0 +1,516 @@
+<!DOCTYPE html>
+<html lang="no">
+<head>
+<meta charset="UTF-8">
+<title>Læringslupa — badge-alternativ</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: LatoWeb, Lato, -apple-system, sans-serif;
+    background: #e8e6df;
+    padding: 40px 32px 60px;
+    color: #2d3b45;
+  }
+
+  h1 {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.10em;
+    text-transform: uppercase;
+    color: #888;
+    margin-bottom: 36px;
+  }
+
+  .row-variants {
+    display: flex;
+    gap: 28px;
+    flex-wrap: wrap;
+    align-items: flex-start;
+  }
+
+  /* ── Kort per alternativ ─────────────────────────── */
+  .card {
+    background: #fff;
+    border-radius: 14px;
+    box-shadow: 0 2px 14px rgba(0,0,0,0.11);
+    overflow: hidden;
+    width: 200px;
+  }
+
+  .card-label {
+    padding: 12px 14px 8px;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+    color: #888;
+    border-bottom: 1px solid #eee;
+  }
+
+  .card-desc {
+    padding: 6px 14px 10px;
+    font-size: 10px;
+    color: #aaa;
+    line-height: 1.5;
+    border-bottom: 1px solid #f0f0f0;
+  }
+
+  /* ── Simulert Læringslupa-kolonne ────────────────── */
+  .col {
+    width: 100%;
+    background: #f7f5f0;
+    border: 1px solid #c0beb5;
+    border-top: none;
+    border-radius: 0 0 8px 8px;
+  }
+
+  .col-header {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    height: 30px;
+    background: #eeecea;
+    border-bottom: 1px solid #c0beb5;
+    border-radius: 8px 8px 0 0;
+    border: 1px solid #c0beb5;
+    font-size: 11px;
+    font-weight: 600;
+    color: #5f5e5a;
+  }
+
+  .col-header img {
+    width: 20px;
+    height: 20px;
+    border-radius: 4px;
+  }
+
+  .cell {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    padding: 0 6px;
+    height: 35px;
+    border-bottom: 0.5px solid #eceae2;
+    position: relative;
+    width: 100%;
+  }
+
+  .cell:last-child { border-bottom: none; }
+
+  /* ── Sirkel (ring) ───────────────────────────────── */
+  .ring {
+    width: 16px; height: 16px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    position: relative;
+  }
+  .ring-full  { background: #3d8b37; }
+  .ring-half  {
+    background: conic-gradient(#3d8b37 0% 50%, #d0cdc5 50% 100%);
+  }
+  .ring-low   {
+    background: conic-gradient(#3d8b37 0% 25%, #d0cdc5 25% 100%);
+  }
+  .ring-grey  { background: #d0cdc5; }
+
+  /* ── Firkant (mark) ──────────────────────────────── */
+  .mark {
+    width: 13px; height: 13px;
+    border-radius: 2px;
+    flex-shrink: 0;
+  }
+  .mark-ok     { background: #3d8b37; }
+  .mark-late   { background: #c0392b; }
+  .mark-out    { border: 1.5px solid #c0392b; background: transparent; }
+  .mark-grey   { border: 1.5px solid #aaa; background: transparent; }
+
+  /* ── Bar (timeline-slider) ───────────────────────── */
+  .bar-wrap {
+    flex: 1;
+    height: 4px;
+    background: #d8d5cc;
+    border-radius: 2px;
+    position: relative;
+    min-width: 24px;
+  }
+  .bar-fill {
+    height: 100%;
+    border-radius: 2px;
+    background: linear-gradient(90deg, #97c459, #3b6d11);
+  }
+  .bar-marker {
+    position: absolute;
+    top: -3px;
+    width: 2px;
+    height: 10px;
+    background: #888;
+    border-radius: 1px;
+  }
+
+  /* ─────────────────────────────────────────────────
+     NOVERANDE (referanse)
+  ───────────────────────────────────────────────── */
+  .badge-current-green  { margin-left: auto; background: #2e7d32; color: #fff; font-size: 9px; font-weight: 700; padding: 1px 5px; border-radius: 8px; white-space: nowrap; flex-shrink: 0; }
+  .badge-current-yellow { margin-left: auto; background: #e6a817; color: #fff; font-size: 9px; font-weight: 700; padding: 1px 5px; border-radius: 8px; white-space: nowrap; flex-shrink: 0; }
+  .badge-current-red    { margin-left: auto; background: #c0392b; color: #fff; font-size: 9px; font-weight: 700; padding: 1px 5px; border-radius: 8px; white-space: nowrap; flex-shrink: 0; }
+  .badge-current-grey   { margin-left: auto; background: #999;    color: #fff; font-size: 9px; font-weight: 700; padding: 1px 5px; border-radius: 8px; white-space: nowrap; flex-shrink: 0; }
+
+  /* ─────────────────────────────────────────────────
+     ALT A — Outline pill
+     Kvitt fyll · fargerik kantlinje · fargerik tekst
+  ───────────────────────────────────────────────── */
+  .badge-a-green  { margin-left: auto; background: #fff; color: #2e7d32; border: 1.5px solid #2e7d32; font-size: 9px; font-weight: 700; padding: 1px 5px; border-radius: 8px; white-space: nowrap; flex-shrink: 0; }
+  .badge-a-yellow { margin-left: auto; background: #fff; color: #b07d00; border: 1.5px solid #e6a817; font-size: 9px; font-weight: 700; padding: 1px 5px; border-radius: 8px; white-space: nowrap; flex-shrink: 0; }
+  .badge-a-red    { margin-left: auto; background: #fff; color: #c0392b; border: 1.5px solid #c0392b; font-size: 9px; font-weight: 700; padding: 1px 5px; border-radius: 8px; white-space: nowrap; flex-shrink: 0; }
+  .badge-a-grey   { margin-left: auto; background: #fff; color: #999;    border: 1.5px solid #ccc;    font-size: 9px; font-weight: 700; padding: 1px 5px; border-radius: 8px; white-space: nowrap; flex-shrink: 0; }
+
+  /* ─────────────────────────────────────────────────
+     ALT B — Ghost tint
+     Veldig lyst fyll · ingen kantlinje · dempet tekst
+  ───────────────────────────────────────────────── */
+  .badge-b-green  { margin-left: auto; background: #eaf5ea; color: #2e7d32; font-size: 9px; font-weight: 700; padding: 1px 5px; border-radius: 8px; white-space: nowrap; flex-shrink: 0; }
+  .badge-b-yellow { margin-left: auto; background: #fdf5e0; color: #8a5f00; font-size: 9px; font-weight: 700; padding: 1px 5px; border-radius: 8px; white-space: nowrap; flex-shrink: 0; }
+  .badge-b-red    { margin-left: auto; background: #fdecea; color: #a93226; font-size: 9px; font-weight: 700; padding: 1px 5px; border-radius: 8px; white-space: nowrap; flex-shrink: 0; }
+  .badge-b-grey   { margin-left: auto; background: #f0f0f0; color: #888;    font-size: 9px; font-weight: 700; padding: 1px 5px; border-radius: 8px; white-space: nowrap; flex-shrink: 0; }
+
+  /* ─────────────────────────────────────────────────
+     ALT C — Berre tekst (inline)
+     Ingen boks · liten hake + tal i fargerik tekst
+  ───────────────────────────────────────────────── */
+  .badge-c-green  { margin-left: auto; color: #2e7d32; font-size: 10px; font-weight: 700; white-space: nowrap; flex-shrink: 0; }
+  .badge-c-yellow { margin-left: auto; color: #b07d00; font-size: 10px; font-weight: 700; white-space: nowrap; flex-shrink: 0; }
+  .badge-c-red    { margin-left: auto; color: #c0392b; font-size: 10px; font-weight: 700; white-space: nowrap; flex-shrink: 0; }
+  .badge-c-grey   { margin-left: auto; color: #aaa;    font-size: 10px; font-weight: 700; white-space: nowrap; flex-shrink: 0; }
+
+  /* ─────────────────────────────────────────────────
+     ALT D — Nøytral chip, farga dot
+     Grå pill · liten fargerik dot · grå tal
+  ───────────────────────────────────────────────── */
+  .badge-d {
+    margin-left: auto;
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    background: #eeece8;
+    padding: 1px 5px 1px 4px;
+    border-radius: 8px;
+    white-space: nowrap;
+    flex-shrink: 0;
+    font-size: 9px;
+    font-weight: 700;
+    color: #666;
+  }
+  .badge-d-dot {
+    width: 5px; height: 5px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+  .dot-green  { background: #2e7d32; }
+  .dot-yellow { background: #e6a817; }
+  .dot-red    { background: #c0392b; }
+  .dot-grey   { background: #aaa; }
+
+  /* ─────────────────────────────────────────────────
+     ALT E — Split pill (hake + tal)
+     Venstre: hake i grønt · Høgre: tal i mørk tekst
+  ───────────────────────────────────────────────── */
+  .badge-e {
+    margin-left: auto;
+    display: inline-flex;
+    align-items: center;
+    border-radius: 7px;
+    overflow: hidden;
+    border: 1px solid #d0cdc5;
+    white-space: nowrap;
+    flex-shrink: 0;
+    font-size: 9px;
+    font-weight: 700;
+  }
+  .badge-e-icon {
+    padding: 1px 4px;
+    font-size: 9px;
+  }
+  .badge-e-num {
+    padding: 1px 4px;
+    background: #f5f4f1;
+    color: #555;
+    border-left: 1px solid #d0cdc5;
+  }
+  .badge-e-green-icon  { background: #eaf5ea; color: #2e7d32; }
+  .badge-e-yellow-icon { background: #fdf5e0; color: #b07d00; }
+  .badge-e-red-icon    { background: #fdecea; color: #a93226; }
+  .badge-e-grey-icon   { background: #f0f0f0; color: #999; }
+
+  /* ─────────────────────────────────────────────────
+     LABELS
+  ───────────────────────────────────────────────── */
+  .status-label {
+    font-size: 9px;
+    color: #bbb;
+    padding: 4px 6px;
+    text-align: right;
+  }
+  .section-title {
+    font-size: 9px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: #bbb;
+    padding: 8px 6px 2px;
+  }
+</style>
+</head>
+<body>
+
+<h1>Læringslupa — Badge-alternativ</h1>
+
+<div class="row-variants">
+
+  <!-- ══ NOVERANDE ══════════════════════════════════════════ -->
+  <div class="card">
+    <div class="card-label">Noverande</div>
+    <div class="card-desc">Solid fyll · kvit tekst<br>Massivet og kontrastfullt</div>
+    <div class="col-header">🔍 Læringslupa</div>
+    <div class="col">
+      <div class="section-title">Grøn</div>
+      <div class="cell">
+        <div class="ring ring-full"></div>
+        <div class="mark mark-ok"></div>
+        <div class="bar-wrap"><div class="bar-fill" style="width:80%"></div><div class="bar-marker" style="left:65%"></div></div>
+        <span class="badge-current-green">✓ 14</span>
+      </div>
+      <div class="section-title">Gul</div>
+      <div class="cell">
+        <div class="ring ring-half"></div>
+        <div class="mark mark-out"></div>
+        <div class="bar-wrap"><div class="bar-fill" style="width:50%"></div><div class="bar-marker" style="left:65%"></div></div>
+        <span class="badge-current-yellow">10</span>
+      </div>
+      <div class="section-title">Raud</div>
+      <div class="cell">
+        <div class="ring ring-low"></div>
+        <div class="mark mark-out"></div>
+        <div class="bar-wrap"><div class="bar-fill" style="width:20%"></div><div class="bar-marker" style="left:65%"></div></div>
+        <span class="badge-current-red">4</span>
+      </div>
+      <div class="section-title">Null</div>
+      <div class="cell">
+        <div class="ring ring-grey"></div>
+        <div class="mark mark-grey"></div>
+        <div class="bar-wrap"><div class="bar-fill" style="width:0%"></div><div class="bar-marker" style="left:65%"></div></div>
+        <span class="badge-current-grey">0</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ ALT A — OUTLINE PILL ══════════════════════════════ -->
+  <div class="card">
+    <div class="card-label">A — Outline pill</div>
+    <div class="card-desc">Kvitt fyll · fargerik kant<br>Likt brukarens forslag</div>
+    <div class="col-header">🔍 Læringslupa</div>
+    <div class="col">
+      <div class="section-title">Grøn</div>
+      <div class="cell">
+        <div class="ring ring-full"></div>
+        <div class="mark mark-ok"></div>
+        <div class="bar-wrap"><div class="bar-fill" style="width:80%"></div><div class="bar-marker" style="left:65%"></div></div>
+        <span class="badge-a-green">✓ 14</span>
+      </div>
+      <div class="section-title">Gul</div>
+      <div class="cell">
+        <div class="ring ring-half"></div>
+        <div class="mark mark-out"></div>
+        <div class="bar-wrap"><div class="bar-fill" style="width:50%"></div><div class="bar-marker" style="left:65%"></div></div>
+        <span class="badge-a-yellow">10</span>
+      </div>
+      <div class="section-title">Raud</div>
+      <div class="cell">
+        <div class="ring ring-low"></div>
+        <div class="mark mark-out"></div>
+        <div class="bar-wrap"><div class="bar-fill" style="width:20%"></div><div class="bar-marker" style="left:65%"></div></div>
+        <span class="badge-a-red">4</span>
+      </div>
+      <div class="section-title">Null</div>
+      <div class="cell">
+        <div class="ring ring-grey"></div>
+        <div class="mark mark-grey"></div>
+        <div class="bar-wrap"><div class="bar-fill" style="width:0%"></div><div class="bar-marker" style="left:65%"></div></div>
+        <span class="badge-a-grey">0</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ ALT B — GHOST TINT ════════════════════════════════ -->
+  <div class="card">
+    <div class="card-label">B — Ghost tint</div>
+    <div class="card-desc">Svært lyst fyll · ingen kant<br>Mest diskré av alle</div>
+    <div class="col-header">🔍 Læringslupa</div>
+    <div class="col">
+      <div class="section-title">Grøn</div>
+      <div class="cell">
+        <div class="ring ring-full"></div>
+        <div class="mark mark-ok"></div>
+        <div class="bar-wrap"><div class="bar-fill" style="width:80%"></div><div class="bar-marker" style="left:65%"></div></div>
+        <span class="badge-b-green">✓ 14</span>
+      </div>
+      <div class="section-title">Gul</div>
+      <div class="cell">
+        <div class="ring ring-half"></div>
+        <div class="mark mark-out"></div>
+        <div class="bar-wrap"><div class="bar-fill" style="width:50%"></div><div class="bar-marker" style="left:65%"></div></div>
+        <span class="badge-b-yellow">10</span>
+      </div>
+      <div class="section-title">Raud</div>
+      <div class="cell">
+        <div class="ring ring-low"></div>
+        <div class="mark mark-out"></div>
+        <div class="bar-wrap"><div class="bar-fill" style="width:20%"></div><div class="bar-marker" style="left:65%"></div></div>
+        <span class="badge-b-red">4</span>
+      </div>
+      <div class="section-title">Null</div>
+      <div class="cell">
+        <div class="ring ring-grey"></div>
+        <div class="mark mark-grey"></div>
+        <div class="bar-wrap"><div class="bar-fill" style="width:0%"></div><div class="bar-marker" style="left:65%"></div></div>
+        <span class="badge-b-grey">0</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ ALT C — BERRE TEKST ═══════════════════════════════ -->
+  <div class="card">
+    <div class="card-label">C — Berre tekst</div>
+    <div class="card-desc">Ingen boks · fargerik tekst<br>Heilt flat og minimalistisk</div>
+    <div class="col-header">🔍 Læringslupa</div>
+    <div class="col">
+      <div class="section-title">Grøn</div>
+      <div class="cell">
+        <div class="ring ring-full"></div>
+        <div class="mark mark-ok"></div>
+        <div class="bar-wrap"><div class="bar-fill" style="width:80%"></div><div class="bar-marker" style="left:65%"></div></div>
+        <span class="badge-c-green">✓14</span>
+      </div>
+      <div class="section-title">Gul</div>
+      <div class="cell">
+        <div class="ring ring-half"></div>
+        <div class="mark mark-out"></div>
+        <div class="bar-wrap"><div class="bar-fill" style="width:50%"></div><div class="bar-marker" style="left:65%"></div></div>
+        <span class="badge-c-yellow">10</span>
+      </div>
+      <div class="section-title">Raud</div>
+      <div class="cell">
+        <div class="ring ring-low"></div>
+        <div class="mark mark-out"></div>
+        <div class="bar-wrap"><div class="bar-fill" style="width:20%"></div><div class="bar-marker" style="left:65%"></div></div>
+        <span class="badge-c-red">4</span>
+      </div>
+      <div class="section-title">Null</div>
+      <div class="cell">
+        <div class="ring ring-grey"></div>
+        <div class="mark mark-grey"></div>
+        <div class="bar-wrap"><div class="bar-fill" style="width:0%"></div><div class="bar-marker" style="left:65%"></div></div>
+        <span class="badge-c-grey">0</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ ALT D — NØYTRAL CHIP + DOT ═══════════════════════ -->
+  <div class="card">
+    <div class="card-label">D — Grå chip + dot</div>
+    <div class="card-desc">Nøytral chip · liten fargerik dot<br>Status via dot, ikkje heile flata</div>
+    <div class="col-header">🔍 Læringslupa</div>
+    <div class="col">
+      <div class="section-title">Grøn</div>
+      <div class="cell">
+        <div class="ring ring-full"></div>
+        <div class="mark mark-ok"></div>
+        <div class="bar-wrap"><div class="bar-fill" style="width:80%"></div><div class="bar-marker" style="left:65%"></div></div>
+        <span class="badge-d"><span class="badge-d-dot dot-green"></span>14</span>
+      </div>
+      <div class="section-title">Gul</div>
+      <div class="cell">
+        <div class="ring ring-half"></div>
+        <div class="mark mark-out"></div>
+        <div class="bar-wrap"><div class="bar-fill" style="width:50%"></div><div class="bar-marker" style="left:65%"></div></div>
+        <span class="badge-d"><span class="badge-d-dot dot-yellow"></span>10</span>
+      </div>
+      <div class="section-title">Raud</div>
+      <div class="cell">
+        <div class="ring ring-low"></div>
+        <div class="mark mark-out"></div>
+        <div class="bar-wrap"><div class="bar-fill" style="width:20%"></div><div class="bar-marker" style="left:65%"></div></div>
+        <span class="badge-d"><span class="badge-d-dot dot-red"></span>4</span>
+      </div>
+      <div class="section-title">Null</div>
+      <div class="cell">
+        <div class="ring ring-grey"></div>
+        <div class="mark mark-grey"></div>
+        <div class="bar-wrap"><div class="bar-fill" style="width:0%"></div><div class="bar-marker" style="left:65%"></div></div>
+        <span class="badge-d"><span class="badge-d-dot dot-grey"></span>0</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ ALT E — SPLIT PILL ════════════════════════════════ -->
+  <div class="card">
+    <div class="card-label">E — Split pill</div>
+    <div class="card-desc">Hake/ikon til venstre · tal til høgre<br>Tydeleg struktur, svak kontrast</div>
+    <div class="col-header">🔍 Læringslupa</div>
+    <div class="col">
+      <div class="section-title">Grøn</div>
+      <div class="cell">
+        <div class="ring ring-full"></div>
+        <div class="mark mark-ok"></div>
+        <div class="bar-wrap"><div class="bar-fill" style="width:80%"></div><div class="bar-marker" style="left:65%"></div></div>
+        <span class="badge-e">
+          <span class="badge-e-icon badge-e-green-icon">✓</span>
+          <span class="badge-e-num">14</span>
+        </span>
+      </div>
+      <div class="section-title">Gul</div>
+      <div class="cell">
+        <div class="ring ring-half"></div>
+        <div class="mark mark-out"></div>
+        <div class="bar-wrap"><div class="bar-fill" style="width:50%"></div><div class="bar-marker" style="left:65%"></div></div>
+        <span class="badge-e">
+          <span class="badge-e-icon badge-e-yellow-icon">!</span>
+          <span class="badge-e-num">10</span>
+        </span>
+      </div>
+      <div class="section-title">Raud</div>
+      <div class="cell">
+        <div class="ring ring-low"></div>
+        <div class="mark mark-out"></div>
+        <div class="bar-wrap"><div class="bar-fill" style="width:20%"></div><div class="bar-marker" style="left:65%"></div></div>
+        <span class="badge-e">
+          <span class="badge-e-icon badge-e-red-icon">!</span>
+          <span class="badge-e-num">4</span>
+        </span>
+      </div>
+      <div class="section-title">Null</div>
+      <div class="cell">
+        <div class="ring ring-grey"></div>
+        <div class="mark mark-grey"></div>
+        <div class="bar-wrap"><div class="bar-fill" style="width:0%"></div><div class="bar-marker" style="left:65%"></div></div>
+        <span class="badge-e">
+          <span class="badge-e-icon badge-e-grey-icon">–</span>
+          <span class="badge-e-num">0</span>
+        </span>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ── Forklaringstekst ─────────────────────── -->
+<div style="margin-top: 40px; font-size: 10px; color: #999; line-height: 1.9; max-width: 700px;">
+  <strong style="color:#666;">Grøn</strong> = ≥ 12 godkjente leksjonar (over terskel) ·
+  <strong style="color:#666;">Gul</strong> = 10–11 (nær terskel) ·
+  <strong style="color:#666;">Raud</strong> = &lt; 10 (under terskel) ·
+  <strong style="color:#666;">Null</strong> = 0 godkjente<br>
+  Sirkelen viser innloggingsaktivitet · Firkanten viser innleveringsstatus · Baren viser progresjonsgrad.
+</div>
+
+</body>
+</html>

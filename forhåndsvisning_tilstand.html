@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="no">
+<head>
+<meta charset="UTF-8">
+<title>Læringslupa — tilstandsfargar firkant</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: LatoWeb, Lato, -apple-system, sans-serif;
+    background: #e8e6df;
+    padding: 40px 32px 60px;
+    color: #2d3b45;
+  }
+  h1 { font-size: 11px; font-weight: 700; letter-spacing: .10em; text-transform: uppercase; color: #888; margin-bottom: 8px; }
+  .subtitle { font-size: 11px; color: #aaa; margin-bottom: 36px; }
+
+  .section { margin-bottom: 48px; }
+  .section-label { font-size: 10px; font-weight: 700; letter-spacing: .07em; text-transform: uppercase; color: #666; margin-bottom: 16px; }
+
+  .row-variants { display: flex; gap: 24px; flex-wrap: wrap; align-items: flex-start; }
+
+  .card { background: #fff; border-radius: 14px; box-shadow: 0 2px 14px rgba(0,0,0,.11); overflow: hidden; width: 180px; }
+  .card-label { padding: 12px 14px 4px; font-size: 10px; font-weight: 700; letter-spacing: .07em; text-transform: uppercase; color: #888; }
+  .card-desc  { padding: 3px 14px 10px; font-size: 10px; color: #bbb; line-height: 1.5; border-bottom: 1px solid #f0f0f0; }
+
+  /* ── Simulert kolonne ── */
+  .col { width: 100%; }
+  .col-header {
+    display: flex; align-items: center; justify-content: center; gap: 6px;
+    height: 36px; border-bottom: 1px solid rgba(0,0,0,.15);
+    font-size: 11px; font-weight: 600;
+    background: #1a1f1a; color: #fff;
+  }
+  .col-header img { width: 18px; height: 18px; border-radius: 3px; }
+
+  .cell {
+    display: flex; align-items: center; gap: 5px;
+    padding: 0 6px; height: 35px;
+    border-bottom: 0.5px solid #eceae2;
+    background: #f7f5f0; width: 100%; position: relative;
+  }
+  .cell:last-child { border-bottom: none; border-radius: 0 0 14px 14px; }
+
+  /* ── Ring ── */
+  .ring { width: 17px; height: 17px; border-radius: 50%; box-sizing: border-box; flex-shrink: 0; }
+  .ring-4 { background: #639922; border: 2px solid #3b6d11; }
+  .ring-1 { background: #dddbd3; border: .75px solid #b4b2a9; }
+  .ring-2 { background: conic-gradient(#97c459 0deg 180deg, #dddbd3 180deg 360deg); border: 1px solid #b4b2a9; }
+
+  /* ── Firkant — noverande ── */
+  .mark { width: 13px; height: 13px; border-radius: 2px; box-sizing: border-box; flex-shrink: 0; }
+  .v-green  { background: #639922; border: 1.5px solid #3b6d11; }       /* vurdert / grøn */
+  .v-x      { background: rgba(198,40,40,.10); border: 1.5px solid #a32d2d; } /* ingen levering */
+  .v-dash   { background: linear-gradient(90deg,#888780 50%,#e8e6de 50%); border: 1px solid #b4b2a9; }
+
+  /* ── Alternativ A: Oransje for venter, blågrå for fritatt ── */
+  .a-venter  { background: #fff3e0; border: 1.5px solid #e65100; }
+  .a-fritatt { background: #e8eaf6; border: 1.5px solid #5c6bc0; }
+
+  /* ── Alternativ B: Venter = oransje fylt, fritatt = grå ── */
+  .b-venter  { background: #e65100; border: 1.5px solid #bf360c; }
+  .b-fritatt { background: #cfd8dc; border: 1.5px solid #78909c; }
+
+  /* ── Alternativ C: Venter = gul kant, fritatt = stripete ── */
+  .c-venter  { background: #fff8e1; border: 1.5px solid #f9a825; }
+  .c-fritatt {
+    background: repeating-linear-gradient(45deg, #e0e0e0 0px, #e0e0e0 2px, #fff 2px, #fff 5px);
+    border: 1.5px solid #9e9e9e;
+  }
+
+  /* ── Alternativ D: Firkant = halv-fill venter, dobbel kant fritatt ── */
+  .d-venter  { background: linear-gradient(135deg, #ff6d00 50%, #fff 50%); border: 1.5px solid #e65100; }
+  .d-fritatt { background: #f5f5f5; border: 2px double #78909c; }
+
+  /* ── Bar ── */
+  .bar-wrap { flex: 1; height: 3px; background: #d8d5cc; border-radius: 2px; min-width: 16px; }
+  .bar-fill { height: 100%; border-radius: 2px; background: linear-gradient(90deg, #97c459, #3b6d11); }
+  .bar-fill-empty { height: 100%; border-radius: 2px; background: #d8d5cc; }
+
+  /* ── Legende ── */
+  .legend { display: flex; flex-direction: column; gap: 8px; margin-top: 20px; }
+  .legend-row { display: flex; align-items: center; gap: 10px; font-size: 11px; color: #555; }
+  .legend-mark { width: 13px; height: 13px; border-radius: 2px; flex-shrink: 0; }
+</style>
+</head>
+<body>
+
+<h1>Læringslupa — tilstandsfargar firkant</h1>
+<p class="subtitle">
+  Noverande: <strong>Fritatt</strong> og <strong>Levert - venter vurdering</strong> viser same grøne firkant (cak-v).<br>
+  Nedanfor: fire alternativ for å skilje dei visuelt. Grøn firkant = vurdert/godkjent held seg uendra.
+</p>
+
+<!-- ═══════════════ NOVERANDE TILSTAND ═══════════════ -->
+<div class="section">
+  <div class="section-label">Noverande — alle tre ser like ut</div>
+  <div class="row-variants">
+
+    <div class="card">
+      <div class="card-label">Vurdert</div>
+      <div class="card-desc">Nyleg karakter · grøn</div>
+      <div class="col">
+        <div class="col-header"><img src="icons/icon48.png"> Læringslupa</div>
+        <div class="cell"><div class="ring ring-4"></div><div class="mark v-green"></div><div class="bar-wrap"><div class="bar-fill" style="width:82%"></div></div></div>
+        <div class="cell"><div class="ring ring-4"></div><div class="mark v-green"></div><div class="bar-wrap"><div class="bar-fill" style="width:60%"></div></div></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-label">Levert – venter</div>
+      <div class="card-desc">Sendt inn, ikkje vurdert · <strong style="color:#c0392b">same grøn</strong></div>
+      <div class="col">
+        <div class="col-header"><img src="icons/icon48.png"> Læringslupa</div>
+        <div class="cell"><div class="ring ring-2"></div><div class="mark v-green"></div><div class="bar-wrap"><div class="bar-fill" style="width:50%"></div></div></div>
+        <div class="cell"><div class="ring ring-1"></div><div class="mark v-green"></div><div class="bar-wrap"><div class="bar-fill" style="width:30%"></div></div></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-label">Fritatt</div>
+      <div class="card-desc">Excused av lærar · <strong style="color:#c0392b">same grøn</strong></div>
+      <div class="col">
+        <div class="col-header"><img src="icons/icon48.png"> Læringslupa</div>
+        <div class="cell"><div class="ring ring-1"></div><div class="mark v-green"></div><div class="bar-wrap"><div class="bar-fill" style="width:70%"></div></div></div>
+        <div class="cell"><div class="ring ring-2"></div><div class="mark v-green"></div><div class="bar-wrap"><div class="bar-fill" style="width:45%"></div></div></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ═══════════════ ALT A ═══════════════ -->
+<div class="section">
+  <div class="section-label">Alternativ A — Oransje outline = venter · Blå outline = fritatt</div>
+  <div class="row-variants">
+
+    <div class="card">
+      <div class="card-label">Vurdert</div>
+      <div class="card-desc">Uendra — grøn</div>
+      <div class="col">
+        <div class="col-header"><img src="icons/icon48.png"> Læringslupa</div>
+        <div class="cell"><div class="ring ring-4"></div><div class="mark v-green"></div><div class="bar-wrap"><div class="bar-fill" style="width:82%"></div></div></div>
+        <div class="cell"><div class="ring ring-4"></div><div class="mark v-green"></div><div class="bar-wrap"><div class="bar-fill" style="width:60%"></div></div></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-label">Levert – venter</div>
+      <div class="card-desc">#e65100 outline · kvit fyll</div>
+      <div class="col">
+        <div class="col-header"><img src="icons/icon48.png"> Læringslupa</div>
+        <div class="cell"><div class="ring ring-2"></div><div class="mark a-venter"></div><div class="bar-wrap"><div class="bar-fill" style="width:50%"></div></div></div>
+        <div class="cell"><div class="ring ring-1"></div><div class="mark a-venter"></div><div class="bar-wrap"><div class="bar-fill" style="width:30%"></div></div></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-label">Fritatt</div>
+      <div class="card-desc">#5c6bc0 outline · kvit fyll</div>
+      <div class="col">
+        <div class="col-header"><img src="icons/icon48.png"> Læringslupa</div>
+        <div class="cell"><div class="ring ring-1"></div><div class="mark a-fritatt"></div><div class="bar-wrap"><div class="bar-fill" style="width:70%"></div></div></div>
+        <div class="cell"><div class="ring ring-2"></div><div class="mark a-fritatt"></div><div class="bar-wrap"><div class="bar-fill" style="width:45%"></div></div></div>
+      </div>
+    </div>
+
+  </div>
+  <div class="legend">
+    <div class="legend-row"><div class="legend-mark v-green"></div> Vurdert — grøn, same som i dag</div>
+    <div class="legend-row"><div class="legend-mark a-venter"></div> Levert, venter vurdering — oransje kant (matchar batteriprikkar)</div>
+    <div class="legend-row"><div class="legend-mark a-fritatt"></div> Fritatt — blå/indigo kant, tydeleg nøytral</div>
+  </div>
+</div>
+
+<!-- ═══════════════ ALT B ═══════════════ -->
+<div class="section">
+  <div class="section-label">Alternativ B — Oransje fylt = venter · Grå fylt = fritatt</div>
+  <div class="row-variants">
+
+    <div class="card">
+      <div class="card-label">Vurdert</div>
+      <div class="card-desc">Uendra — grøn</div>
+      <div class="col">
+        <div class="col-header"><img src="icons/icon48.png"> Læringslupa</div>
+        <div class="cell"><div class="ring ring-4"></div><div class="mark v-green"></div><div class="bar-wrap"><div class="bar-fill" style="width:82%"></div></div></div>
+        <div class="cell"><div class="ring ring-4"></div><div class="mark v-green"></div><div class="bar-wrap"><div class="bar-fill" style="width:60%"></div></div></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-label">Levert – venter</div>
+      <div class="card-desc">#e65100 fylt — sterk</div>
+      <div class="col">
+        <div class="col-header"><img src="icons/icon48.png"> Læringslupa</div>
+        <div class="cell"><div class="ring ring-2"></div><div class="mark b-venter"></div><div class="bar-wrap"><div class="bar-fill" style="width:50%"></div></div></div>
+        <div class="cell"><div class="ring ring-1"></div><div class="mark b-venter"></div><div class="bar-wrap"><div class="bar-fill" style="width:30%"></div></div></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-label">Fritatt</div>
+      <div class="card-desc">#cfd8dc grå · dempa</div>
+      <div class="col">
+        <div class="col-header"><img src="icons/icon48.png"> Læringslupa</div>
+        <div class="cell"><div class="ring ring-1"></div><div class="mark b-fritatt"></div><div class="bar-wrap"><div class="bar-fill" style="width:70%"></div></div></div>
+        <div class="cell"><div class="ring ring-2"></div><div class="mark b-fritatt"></div><div class="bar-wrap"><div class="bar-fill" style="width:45%"></div></div></div>
+      </div>
+    </div>
+
+  </div>
+  <div class="legend">
+    <div class="legend-row"><div class="legend-mark v-green"></div> Vurdert</div>
+    <div class="legend-row"><div class="legend-mark b-venter"></div> Levert, venter — sterk oransje fylt (høg merksemd)</div>
+    <div class="legend-row"><div class="legend-mark b-fritatt"></div> Fritatt — grå (passiv, «telt ikkje»)</div>
+  </div>
+</div>
+
+<!-- ═══════════════ ALT C ═══════════════ -->
+<div class="section">
+  <div class="section-label">Alternativ C — Gul outline = venter · Stripete = fritatt</div>
+  <div class="row-variants">
+
+    <div class="card">
+      <div class="card-label">Vurdert</div>
+      <div class="card-desc">Uendra — grøn</div>
+      <div class="col">
+        <div class="col-header"><img src="icons/icon48.png"> Læringslupa</div>
+        <div class="cell"><div class="ring ring-4"></div><div class="mark v-green"></div><div class="bar-wrap"><div class="bar-fill" style="width:82%"></div></div></div>
+        <div class="cell"><div class="ring ring-4"></div><div class="mark v-green"></div><div class="bar-wrap"><div class="bar-fill" style="width:60%"></div></div></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-label">Levert – venter</div>
+      <div class="card-desc">#f9a825 gul outline</div>
+      <div class="col">
+        <div class="col-header"><img src="icons/icon48.png"> Læringslupa</div>
+        <div class="cell"><div class="ring ring-2"></div><div class="mark c-venter"></div><div class="bar-wrap"><div class="bar-fill" style="width:50%"></div></div></div>
+        <div class="cell"><div class="ring ring-1"></div><div class="mark c-venter"></div><div class="bar-wrap"><div class="bar-fill" style="width:30%"></div></div></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-label">Fritatt</div>
+      <div class="card-desc">45°-stripe · særeigen</div>
+      <div class="col">
+        <div class="col-header"><img src="icons/icon48.png"> Læringslupa</div>
+        <div class="cell"><div class="ring ring-1"></div><div class="mark c-fritatt"></div><div class="bar-wrap"><div class="bar-fill" style="width:70%"></div></div></div>
+        <div class="cell"><div class="ring ring-2"></div><div class="mark c-fritatt"></div><div class="bar-wrap"><div class="bar-fill" style="width:45%"></div></div></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ═══════════════ ALT D ═══════════════ -->
+<div class="section">
+  <div class="section-label">Alternativ D — Diagonal split = venter · Dobbel kant = fritatt</div>
+  <div class="row-variants">
+
+    <div class="card">
+      <div class="card-label">Vurdert</div>
+      <div class="card-desc">Uendra — grøn</div>
+      <div class="col">
+        <div class="col-header"><img src="icons/icon48.png"> Læringslupa</div>
+        <div class="cell"><div class="ring ring-4"></div><div class="mark v-green"></div><div class="bar-wrap"><div class="bar-fill" style="width:82%"></div></div></div>
+        <div class="cell"><div class="ring ring-4"></div><div class="mark v-green"></div><div class="bar-wrap"><div class="bar-fill" style="width:60%"></div></div></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-label">Levert – venter</div>
+      <div class="card-desc">Diag oransje/kvit split</div>
+      <div class="col">
+        <div class="col-header"><img src="icons/icon48.png"> Læringslupa</div>
+        <div class="cell"><div class="ring ring-2"></div><div class="mark d-venter"></div><div class="bar-wrap"><div class="bar-fill" style="width:50%"></div></div></div>
+        <div class="cell"><div class="ring ring-1"></div><div class="mark d-venter"></div><div class="bar-wrap"><div class="bar-fill" style="width:30%"></div></div></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-label">Fritatt</div>
+      <div class="card-desc">Dobbel grå kant</div>
+      <div class="col">
+        <div class="col-header"><img src="icons/icon48.png"> Læringslupa</div>
+        <div class="cell"><div class="ring ring-1"></div><div class="mark d-fritatt"></div><div class="bar-wrap"><div class="bar-fill" style="width:70%"></div></div></div>
+        <div class="cell"><div class="ring ring-2"></div><div class="mark d-fritatt"></div><div class="bar-wrap"><div class="bar-fill" style="width:45%"></div></div></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div style="margin-top:40px; font-size:10px; color:#aaa; line-height:1.9;">
+  Ikonet lastar berre om du opnar fila frå rotmappa til utvidinga.<br>
+  <strong>Tilråding:</strong> Alternativ A er mest konsistent — oransje matchar batteriprikkar, blå er tydeleg nøytral.
+</div>
+
+</body>
+</html>

@@ -2,6 +2,8 @@
 
 Chrome-utvidelse (MV3) for Canvas LMS. Legg til ei svevande aktivitetskolonne i gradebook som viser innloggings- og innleveringsaktivitet per elev. Utvikla for Globalskolen — norsk nettskule for barn i utlandet.
 
+> **Åpen designoppgave:** se [`PLAN.md`](PLAN.md) — planlagt (men utsatt) port fra Chrome-utvidelse til Canvas tema-JS, så lærere slipper å laste ned/oppdatere lokalt. Les den før arbeid på distribusjon/oppdateringsflyt.
+
 ## Prosjektstruktur
 
 | Fil | Rolle |

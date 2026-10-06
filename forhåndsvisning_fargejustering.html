@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="no">
+<head>
+<meta charset="UTF-8">
+<title>Læringslupa — fargejustering forslag</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: LatoWeb, Lato, -apple-system, sans-serif;
+    background: #e8e6df;
+    padding: 40px 32px 60px;
+    color: #2d3b45;
+  }
+  h1 { font-size: 11px; font-weight: 700; letter-spacing: .10em; text-transform: uppercase; color: #888; margin-bottom: 4px; }
+  .subtitle { font-size: 11px; color: #aaa; margin-bottom: 36px; }
+
+  .section { margin-bottom: 52px; }
+  .section-label { font-size: 10px; font-weight: 700; letter-spacing: .07em; text-transform: uppercase; color: #666; margin-bottom: 16px; }
+
+  .pair { display: flex; gap: 32px; align-items: flex-start; flex-wrap: wrap; }
+
+  .card { background: #fff; border-radius: 14px; box-shadow: 0 2px 14px rgba(0,0,0,.11); overflow: hidden; width: 200px; }
+  .card-label { padding: 12px 14px 4px; font-size: 10px; font-weight: 700; letter-spacing: .07em; text-transform: uppercase; color: #888; }
+  .card-desc  { padding: 3px 14px 10px; font-size: 10px; color: #bbb; line-height: 1.5; border-bottom: 1px solid #f0f0f0; }
+
+  /* ── Kolonnesimulering ── */
+  .col { width: 100%; }
+  .col-header {
+    display: flex; align-items: center; justify-content: center; gap: 6px;
+    height: 36px; border-bottom: 1px solid rgba(0,0,0,.15);
+    background: rgba(255,255,255,.6);
+    font-size: 12px; font-weight: 600; color: #2d3b45;
+  }
+
+  /* Celler */
+  .col-cell {
+    position: relative;
+    display: flex; align-items: center;
+    gap: 5px; padding: 0 8px;
+    height: 36px;
+    border-bottom: 1px solid rgba(0,0,0,.06);
+    background: #fff;
+  }
+  .col-cell.hl-red    { background: rgba(230,100,100,.12); }
+  .col-cell.hl-yellow { background: rgba(230,180,60,.10); }
+  .col-cell.hl-green  { background: rgba(59,109,17,.08); }
+
+  /* Felles ring */
+  .ring {
+    width: 18px; height: 18px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    display: inline-block;
+  }
+
+  /* NOVERANDE ring */
+  .now-ring-4 { background: #639922; border: 2px solid #3b6d11; }
+  .now-ring-3 { background: conic-gradient(#639922 0deg 270deg, #dddbd3 270deg 360deg); border: 1.5px solid #b4b2a9; }
+  .now-ring-2 { background: conic-gradient(#97c459 0deg 180deg, #dddbd3 180deg 360deg); border: 1px solid #b4b2a9; }
+  .now-ring-1 { background: #dddbd3; border: 0.75px solid #b4b2a9; }
+
+  /* FORSLAG ring */
+  .new-ring-4 { background: white; border: 2.5px solid #3b6d11; }
+  .new-ring-3 { background: conic-gradient(#639922 0deg 270deg, #dddbd3 270deg 360deg); border: 1.5px solid #b4b2a9; }
+  .new-ring-2 { background: conic-gradient(#97c459 0deg 180deg, #dddbd3 180deg 360deg); border: 1px solid #b4b2a9; }
+  .new-ring-1 { background: #dddbd3; border: 0.75px solid #b4b2a9; }
+
+  /* Mark (firkant) */
+  .mark {
+    width: 14px; height: 14px;
+    border-radius: 2px;
+    flex-shrink: 0;
+    display: inline-block;
+  }
+  .mark-green  { background: #f0fae6; border: 1.5px solid #3b6d11; }
+  .mark-yellow { background: #fffdf0; border: 1.5px solid #c9960a; }
+  .mark-gray   { background: #f5f4ee; border: 1.5px solid #b4b2a9; }
+  .mark-red    { background: #fff5f5; border: 1.5px solid #a32d2d; }
+
+  /* Timeline wrapper */
+  .tl-wrap {
+    display: inline-flex; align-items: center; justify-content: center;
+    background: #f5f4ee; border: 0.5px solid #d3d1c7; border-radius: 5px;
+    padding: 2px 4px; height: 22px; flex-shrink: 0;
+  }
+
+  /* NOVERANDE tidslinje — barH=6 */
+  .tl-now { display: block; }
+  /* FORSLAG tidslinje — barH=3 */
+  .tl-new { display: block; }
+
+  /* Badge */
+  .badge-green {
+    border: 1.5px solid #3b6d11; border-radius: 10px; color: #3b6d11;
+    font-size: 11px; font-weight: 700; padding: 1px 6px;
+    white-space: nowrap; flex-shrink: 0;
+  }
+  .badge-red {
+    border: 1.5px solid #a32d2d; border-radius: 50%;
+    width: 22px; height: 22px;
+    display: inline-flex; align-items: center; justify-content: center;
+    color: #a32d2d; font-size: 11px; font-weight: 700; flex-shrink: 0;
+  }
+
+  /* Visningsbar */
+  .view-bar-wrap {
+    position: absolute; bottom: 0; left: 0; right: 0;
+    overflow: hidden;
+  }
+  .view-bar-fill {
+    height: 100%;
+    border-radius: 0 1.5px 1.5px 0;
+  }
+  /* NOVERANDE: 3px, mørk grøn */
+  .now-view { height: 3px; }
+  .now-view .view-bar-fill { background: linear-gradient(90deg, #97c459, #3b6d11); }
+  /* FORSLAG: 2px, lysare grøn */
+  .new-view { height: 2px; }
+  .new-view .view-bar-fill { background: linear-gradient(90deg, #b8d98a, #639922); }
+
+  .col-cell-spacer { height: 3px; } /* kompenser for view-bar */
+</style>
+</head>
+<body>
+
+<h1>Læringslupa — fargejustering forslag</h1>
+<p class="subtitle">Noverande vs. forslag — side om side</p>
+
+<!-- ═══════════════════════════════════════════════════════ UTAN TRAFIKKLYS -->
+<div class="section">
+  <div class="section-label">Utan trafikklysmarkering</div>
+  <div class="pair">
+
+    <div class="card">
+      <div class="card-label">Noverande</div>
+      <div class="card-desc">Sirkel solid grøn · Bar 6px · Stripe 3px mørk</div>
+      <div class="col">
+        <div class="col-header">
+          <img src="icons/icon48.png" style="width:16px;height:16px;border-radius:3px;opacity:.85"> Læringslupa
+        </div>
+
+        <!-- Rad 1: Nyleg innlogga, levert, i rute -->
+        <div class="col-cell">
+          <span class="ring now-ring-4"></span>
+          <span class="mark mark-green"></span>
+          <div class="tl-wrap">
+            <svg width="56" height="16" viewBox="0 0 56 16" class="tl-now">
+              <line x1="3" y1="8" x2="53" y2="8" stroke="#d3d1c7" stroke-width="1.5"/>
+              <rect x="26.8" y="2" width="2.4" height="12" rx="1" fill="#888780"/>
+              <rect x="30" y="5" width="14" height="6" rx="2" fill="url(#g-green-now)"/>
+              <defs><linearGradient id="g-green-now" x1="0%" x2="100%"><stop offset="0%" stop-color="#97c459"/><stop offset="100%" stop-color="#3b6d11"/></linearGradient></defs>
+            </svg>
+          </div>
+          <span class="badge-green">✓ 15</span>
+          <div class="view-bar-wrap now-view"><div class="view-bar-fill" style="width:88%"></div></div>
+        </div>
+
+        <!-- Rad 2: Lenge sidan innlogging, ikkje levert, på etterskot -->
+        <div class="col-cell">
+          <span class="ring now-ring-1"></span>
+          <span class="mark mark-red"></span>
+          <div class="tl-wrap">
+            <svg width="56" height="16" viewBox="0 0 56 16" class="tl-now">
+              <line x1="3" y1="8" x2="53" y2="8" stroke="#d3d1c7" stroke-width="1.5"/>
+              <rect x="26.8" y="2" width="2.4" height="12" rx="1" fill="#888780"/>
+              <rect x="12" y="5" width="14" height="6" rx="2" fill="url(#g-red-now)"/>
+              <defs><linearGradient id="g-red-now" x1="100%" x2="0%"><stop offset="0%" stop-color="#e57373"/><stop offset="100%" stop-color="#a32d2d"/></linearGradient></defs>
+            </svg>
+          </div>
+          <span class="badge-red">6</span>
+          <div class="view-bar-wrap now-view"><div class="view-bar-fill" style="width:30%"></div></div>
+        </div>
+
+        <!-- Rad 3: Medium, delvis grøn -->
+        <div class="col-cell">
+          <span class="ring now-ring-3"></span>
+          <span class="mark mark-red"></span>
+          <div class="tl-wrap">
+            <svg width="56" height="16" viewBox="0 0 56 16">
+              <line x1="3" y1="8" x2="53" y2="8" stroke="#d3d1c7" stroke-width="1.5"/>
+              <rect x="26.8" y="2" width="2.4" height="12" rx="1" fill="#888780"/>
+              <rect x="16" y="5" width="10" height="6" rx="2" fill="url(#g-red-now)"/>
+            </svg>
+          </div>
+          <span class="badge-green">✓ 13</span>
+          <div class="view-bar-wrap now-view"><div class="view-bar-fill" style="width:60%"></div></div>
+        </div>
+
+        <!-- Rad 4: Grå, inga frister -->
+        <div class="col-cell">
+          <span class="ring now-ring-1"></span>
+          <span class="mark mark-gray"></span>
+          <div class="tl-wrap">
+            <svg width="56" height="16" viewBox="0 0 56 16">
+              <line x1="3" y1="8" x2="53" y2="8" stroke="#d3d1c7" stroke-width="1.5"/>
+              <rect x="26.8" y="2" width="2.4" height="12" rx="1" fill="#e0dfd8"/>
+              <circle cx="28" cy="8" r="4.5" fill="none" stroke="#c8c6be" stroke-width="1.5" stroke-dasharray="2.5,2"/>
+            </svg>
+          </div>
+          <span class="badge-green">✓ 15</span>
+          <div class="view-bar-wrap now-view"><div class="view-bar-fill" style="width:0%"></div></div>
+        </div>
+      </div>
+    </div><!-- /noverande -->
+
+    <div class="card">
+      <div class="card-label">Forslag</div>
+      <div class="card-desc">Sirkel hol grøn · Bar 3px · Stripe 2px lys</div>
+      <div class="col">
+        <div class="col-header">
+          <img src="icons/icon48.png" style="width:16px;height:16px;border-radius:3px;opacity:.85"> Læringslupa
+        </div>
+
+        <div class="col-cell">
+          <span class="ring new-ring-4"></span>
+          <span class="mark mark-green"></span>
+          <div class="tl-wrap">
+            <svg width="56" height="16" viewBox="0 0 56 16" class="tl-new">
+              <line x1="3" y1="8" x2="53" y2="8" stroke="#d3d1c7" stroke-width="1.5"/>
+              <rect x="26.8" y="2" width="2.4" height="12" rx="1" fill="#888780"/>
+              <rect x="30" y="6.5" width="14" height="3" rx="1.5" fill="url(#g-green-new)"/>
+              <defs><linearGradient id="g-green-new" x1="0%" x2="100%"><stop offset="0%" stop-color="#97c459"/><stop offset="100%" stop-color="#3b6d11"/></linearGradient></defs>
+            </svg>
+          </div>
+          <span class="badge-green">✓ 15</span>
+          <div class="view-bar-wrap new-view"><div class="view-bar-fill" style="width:88%"></div></div>
+        </div>
+
+        <div class="col-cell">
+          <span class="ring new-ring-1"></span>
+          <span class="mark mark-red"></span>
+          <div class="tl-wrap">
+            <svg width="56" height="16" viewBox="0 0 56 16" class="tl-new">
+              <line x1="3" y1="8" x2="53" y2="8" stroke="#d3d1c7" stroke-width="1.5"/>
+              <rect x="26.8" y="2" width="2.4" height="12" rx="1" fill="#888780"/>
+              <rect x="12" y="6.5" width="14" height="3" rx="1.5" fill="url(#g-red-new)"/>
+              <defs><linearGradient id="g-red-new" x1="100%" x2="0%"><stop offset="0%" stop-color="#e57373"/><stop offset="100%" stop-color="#a32d2d"/></linearGradient></defs>
+            </svg>
+          </div>
+          <span class="badge-red">6</span>
+          <div class="view-bar-wrap new-view"><div class="view-bar-fill" style="width:30%"></div></div>
+        </div>
+
+        <div class="col-cell">
+          <span class="ring new-ring-3"></span>
+          <span class="mark mark-red"></span>
+          <div class="tl-wrap">
+            <svg width="56" height="16" viewBox="0 0 56 16">
+              <line x1="3" y1="8" x2="53" y2="8" stroke="#d3d1c7" stroke-width="1.5"/>
+              <rect x="26.8" y="2" width="2.4" height="12" rx="1" fill="#888780"/>
+              <rect x="16" y="6.5" width="10" height="3" rx="1.5" fill="url(#g-red-new)"/>
+            </svg>
+          </div>
+          <span class="badge-green">✓ 13</span>
+          <div class="view-bar-wrap new-view"><div class="view-bar-fill" style="width:60%"></div></div>
+        </div>
+
+        <div class="col-cell">
+          <span class="ring new-ring-1"></span>
+          <span class="mark mark-gray"></span>
+          <div class="tl-wrap">
+            <svg width="56" height="16" viewBox="0 0 56 16">
+              <line x1="3" y1="8" x2="53" y2="8" stroke="#d3d1c7" stroke-width="1.5"/>
+              <rect x="26.8" y="2" width="2.4" height="12" rx="1" fill="#e0dfd8"/>
+              <circle cx="28" cy="8" r="4.5" fill="none" stroke="#c8c6be" stroke-width="1.5" stroke-dasharray="2.5,2"/>
+            </svg>
+          </div>
+          <span class="badge-green">✓ 15</span>
+          <div class="view-bar-wrap new-view"><div class="view-bar-fill" style="width:0%"></div></div>
+        </div>
+      </div>
+    </div><!-- /forslag -->
+
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ MED TRAFIKKLYS -->
+<div class="section">
+  <div class="section-label">Med trafikklysmarkering</div>
+  <div class="pair">
+
+    <div class="card">
+      <div class="card-label">Noverande</div>
+      <div class="card-desc">Rød rad + solid grøn sirkel → konflikt</div>
+      <div class="col">
+        <div class="col-header">
+          <img src="icons/icon48.png" style="width:16px;height:16px;border-radius:3px;opacity:.85"> Læringslupa
+        </div>
+        <!-- Grøn rad -->
+        <div class="col-cell hl-green">
+          <span class="ring now-ring-4"></span>
+          <span class="mark mark-green"></span>
+          <div class="tl-wrap">
+            <svg width="56" height="16" viewBox="0 0 56 16">
+              <line x1="3" y1="8" x2="53" y2="8" stroke="#d3d1c7" stroke-width="1.5"/>
+              <rect x="26.8" y="2" width="2.4" height="12" rx="1" fill="#888780"/>
+              <rect x="30" y="5" width="14" height="6" rx="2" fill="url(#g-green-now)"/>
+            </svg>
+          </div>
+          <span class="badge-green">✓ 15</span>
+          <div class="view-bar-wrap now-view"><div class="view-bar-fill" style="width:95%"></div></div>
+        </div>
+        <!-- Gul rad -->
+        <div class="col-cell hl-yellow">
+          <span class="ring now-ring-3"></span>
+          <span class="mark mark-red"></span>
+          <div class="tl-wrap">
+            <svg width="56" height="16" viewBox="0 0 56 16">
+              <line x1="3" y1="8" x2="53" y2="8" stroke="#d3d1c7" stroke-width="1.5"/>
+              <rect x="26.8" y="2" width="2.4" height="12" rx="1" fill="#888780"/>
+              <rect x="16" y="5" width="9" height="6" rx="2" fill="url(#g-red-now)"/>
+            </svg>
+          </div>
+          <span class="badge-green">✓ 12</span>
+          <div class="view-bar-wrap now-view"><div class="view-bar-fill" style="width:70%"></div></div>
+        </div>
+        <!-- Raud rad — KONFLIKT: solid grøn sirkel -->
+        <div class="col-cell hl-red">
+          <span class="ring now-ring-4"></span>
+          <span class="mark mark-red"></span>
+          <div class="tl-wrap">
+            <svg width="56" height="16" viewBox="0 0 56 16">
+              <line x1="3" y1="8" x2="53" y2="8" stroke="#d3d1c7" stroke-width="1.5"/>
+              <rect x="26.8" y="2" width="2.4" height="12" rx="1" fill="#888780"/>
+              <rect x="12" y="5" width="13" height="6" rx="2" fill="url(#g-red-now)"/>
+            </svg>
+          </div>
+          <span class="badge-red">3</span>
+          <div class="view-bar-wrap now-view"><div class="view-bar-fill" style="width:82%"></div></div>
+        </div>
+        <!-- Raud rad -->
+        <div class="col-cell hl-red">
+          <span class="ring now-ring-1"></span>
+          <span class="mark mark-red"></span>
+          <div class="tl-wrap">
+            <svg width="56" height="16" viewBox="0 0 56 16">
+              <line x1="3" y1="8" x2="53" y2="8" stroke="#d3d1c7" stroke-width="1.5"/>
+              <rect x="26.8" y="2" width="2.4" height="12" rx="1" fill="#888780"/>
+              <rect x="10" y="5" width="16" height="6" rx="2" fill="url(#g-red-now)"/>
+            </svg>
+          </div>
+          <span class="badge-red">6</span>
+          <div class="view-bar-wrap now-view"><div class="view-bar-fill" style="width:20%"></div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-label">Forslag</div>
+      <div class="card-desc">Rød rad + hol sirkel → harmonisk</div>
+      <div class="col">
+        <div class="col-header">
+          <img src="icons/icon48.png" style="width:16px;height:16px;border-radius:3px;opacity:.85"> Læringslupa
+        </div>
+        <div class="col-cell hl-green">
+          <span class="ring new-ring-4"></span>
+          <span class="mark mark-green"></span>
+          <div class="tl-wrap">
+            <svg width="56" height="16" viewBox="0 0 56 16">
+              <line x1="3" y1="8" x2="53" y2="8" stroke="#d3d1c7" stroke-width="1.5"/>
+              <rect x="26.8" y="2" width="2.4" height="12" rx="1" fill="#888780"/>
+              <rect x="30" y="6.5" width="14" height="3" rx="1.5" fill="url(#g-green-new)"/>
+            </svg>
+          </div>
+          <span class="badge-green">✓ 15</span>
+          <div class="view-bar-wrap new-view"><div class="view-bar-fill" style="width:95%"></div></div>
+        </div>
+        <div class="col-cell hl-yellow">
+          <span class="ring new-ring-3"></span>
+          <span class="mark mark-red"></span>
+          <div class="tl-wrap">
+            <svg width="56" height="16" viewBox="0 0 56 16">
+              <line x1="3" y1="8" x2="53" y2="8" stroke="#d3d1c7" stroke-width="1.5"/>
+              <rect x="26.8" y="2" width="2.4" height="12" rx="1" fill="#888780"/>
+              <rect x="16" y="6.5" width="9" height="3" rx="1.5" fill="url(#g-red-new)"/>
+            </svg>
+          </div>
+          <span class="badge-green">✓ 12</span>
+          <div class="view-bar-wrap new-view"><div class="view-bar-fill" style="width:70%"></div></div>
+        </div>
+        <!-- Raud rad — sirkel hol, ikkje konflikt -->
+        <div class="col-cell hl-red">
+          <span class="ring new-ring-4"></span>
+          <span class="mark mark-red"></span>
+          <div class="tl-wrap">
+            <svg width="56" height="16" viewBox="0 0 56 16">
+              <line x1="3" y1="8" x2="53" y2="8" stroke="#d3d1c7" stroke-width="1.5"/>
+              <rect x="26.8" y="2" width="2.4" height="12" rx="1" fill="#888780"/>
+              <rect x="12" y="6.5" width="13" height="3" rx="1.5" fill="url(#g-red-new)"/>
+            </svg>
+          </div>
+          <span class="badge-red">3</span>
+          <div class="view-bar-wrap new-view"><div class="view-bar-fill" style="width:82%"></div></div>
+        </div>
+        <div class="col-cell hl-red">
+          <span class="ring new-ring-1"></span>
+          <span class="mark mark-red"></span>
+          <div class="tl-wrap">
+            <svg width="56" height="16" viewBox="0 0 56 16">
+              <line x1="3" y1="8" x2="53" y2="8" stroke="#d3d1c7" stroke-width="1.5"/>
+              <rect x="26.8" y="2" width="2.4" height="12" rx="1" fill="#888780"/>
+              <rect x="10" y="6.5" width="16" height="3" rx="1.5" fill="url(#g-red-new)"/>
+            </svg>
+          </div>
+          <span class="badge-red">6</span>
+          <div class="view-bar-wrap new-view"><div class="view-bar-fill" style="width:20%"></div></div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ═══════════════════════════ RING-TILSTANDAR ISOLERT -->
+<div class="section">
+  <div class="section-label">Ring — alle tilstandar isolert</div>
+  <div class="pair" style="gap:16px;align-items:center">
+    <div style="display:flex;flex-direction:column;gap:6px;align-items:center">
+      <div style="font-size:10px;color:#aaa;margin-bottom:4px">Noverande</div>
+      <span class="ring now-ring-4"></span>
+      <span class="ring now-ring-3"></span>
+      <span class="ring now-ring-2"></span>
+      <span class="ring now-ring-1"></span>
+      <div style="font-size:9px;color:#bbb;margin-top:4px;text-align:center">1–3 dagar<br>4–7 dagar<br>8–15 dagar<br>&gt;15 / ukjent</div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:6px;align-items:center">
+      <div style="font-size:10px;color:#aaa;margin-bottom:4px">Forslag</div>
+      <span class="ring new-ring-4"></span>
+      <span class="ring new-ring-3"></span>
+      <span class="ring new-ring-2"></span>
+      <span class="ring new-ring-1"></span>
+    </div>
+    <div style="font-size:10px;color:#888;max-width:200px;line-height:1.6;padding:12px;background:#fff;border-radius:8px;box-shadow:0 1px 6px rgba(0,0,0,.08)">
+      Ring-4 er einaste endring: solid grøn fyll → kvitt fyll med tjukk grøn kant.<br><br>
+      Ring-3 og ring-2 (kake-gradientar) er uendra.
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

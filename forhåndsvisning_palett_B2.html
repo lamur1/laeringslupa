@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="no">
+<head>
+<meta charset="UTF-8">
+<title>Læringslupa — Variant B2</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: LatoWeb, Lato, -apple-system, sans-serif;
+    background: #d6d3cc;
+    padding: 40px 32px 80px;
+    color: #2d3b45;
+  }
+  h1 {
+    font-size: 11px; font-weight: 700; letter-spacing: .10em;
+    text-transform: uppercase; color: #888; margin-bottom: 6px;
+  }
+  .ingress {
+    font-size: 11px; color: #999; margin-bottom: 44px; line-height: 1.6;
+    max-width: 860px;
+  }
+  .section-label {
+    font-size: 10px; font-weight: 700; letter-spacing: .08em;
+    text-transform: uppercase; color: #aaa; margin-bottom: 16px; margin-top: 40px;
+  }
+  .row { display: flex; gap: 28px; flex-wrap: wrap; align-items: flex-start; }
+
+  /* ── Kort ───────────────────────────────────── */
+  .card {
+    background: #e8e5de; border-radius: 16px;
+    box-shadow: 0 3px 18px rgba(0,0,0,.13);
+    overflow: hidden; width: 252px;
+  }
+  .card-meta { padding: 13px 15px 11px; border-bottom: 1px solid #d0cdc5; }
+  .card-name { font-size: 12px; font-weight: 700; color: #333; margin-bottom: 3px; }
+  .card-desc { font-size: 10px; color: #888; line-height: 1.5; }
+
+  /* ── Tittelcelle ─────────────────────────────── */
+  .header-cell {
+    position: relative;
+    display: flex; align-items: center; justify-content: center; gap: 6px;
+    height: 36px; font-size: 11px; font-weight: 600; color: #fff;
+    background: #1a1f1a; overflow: hidden; letter-spacing: .03em;
+  }
+  .countdown-bar {
+    position: absolute; bottom: 0; left: 0;
+    height: 2.5px; width: 62%; background: #e8a020;
+  }
+  .lupe-icon { width: 20px; height: 20px; flex-shrink: 0; }
+
+  /* ── Elevceller ──────────────────────────────── */
+  .cell {
+    display: flex; align-items: center; gap: 5px;
+    padding: 0 8px; height: 34px;
+    border-bottom: 0.5px solid #eceae2; background: #f7f5f0;
+  }
+  .ring { width: 15px; height: 15px; border-radius: 50%; flex-shrink: 0; }
+  .ring-full  { background: #3d8b37; }
+  .ring-half  { background: conic-gradient(#3d8b37 0% 55%, #c8c5bd 55% 100%); }
+  .ring-empty { background: #c8c5bd; }
+  .mark { width: 12px; height: 12px; border-radius: 2px; flex-shrink: 0; }
+  .mark-red  { border: 1.5px solid #c0392b; background: #fdecea; }
+  .mark-grey { border: 1.5px solid #aaa; background: transparent; }
+  .progress-wrap {
+    flex: 1; height: 4px; background: #d8d5cc;
+    border-radius: 2px; position: relative; min-width: 20px;
+  }
+  .progress-fill {
+    height: 100%; border-radius: 2px;
+    background: linear-gradient(90deg, #97c459, #3b6d11);
+  }
+  .progress-marker {
+    position: absolute; top: -4px; width: 2px; height: 11px;
+    background: #888; border-radius: 1px;
+  }
+
+  /* ── Tooltip ─────────────────────────────────── */
+  .tooltip {
+    background: #fff; border-radius: 10px;
+    box-shadow: 0 3px 14px rgba(0,0,0,.13);
+    padding: 12px; margin: 10px 10px 12px;
+    font-size: 11px; color: #333; line-height: 1.7;
+  }
+  .tip-green { font-weight: 600; color: #2d6e1f; }
+  .tip-red   { color: #c0392b; font-weight: 600; }
+  .sep { border: none; border-top: 1px solid #e8e5de; margin: 7px 0; }
+  .tip-label { font-size: 10px; color: #888; margin-bottom: 8px; }
+
+  /* ── Graf ────────────────────────────────────── */
+  /*
+    Struktur per leksjon (kolonne):
+      [leksjonsnummer øvst]
+      [grøn søyle veks OPPOVER]
+      [grunnlinje]
+      [prikkar UNDER grunnlinja = ikkje leverte innleveringar]
+
+    Søyla er 9px brei, prikken 7px — 1px synleg grønt på kvar side.
+    Leverte innleveringar: prikk ligg oppå søyla (z-index over).
+  */
+  .chart-wrap {
+    position: relative;
+  }
+  .chart-grid {
+    display: flex;
+    gap: 7px;
+    align-items: flex-end; /* botnen er grunnlinja */
+    padding-bottom: 1px;
+    position: relative;
+  }
+  .chart-baseline {
+    height: 1px; background: #bbb;
+    margin: 0 0 0 0;
+  }
+  .chart-below {
+    display: flex;
+    gap: 7px;
+    align-items: flex-start;
+    padding-top: 2px;
+  }
+  .col-num {
+    font-size: 8px; color: #999;
+    text-align: center; width: 9px;
+    margin-bottom: 3px;
+  }
+  /* Grøn søyle — veks oppover */
+  .bar {
+    width: 9px;
+    border-radius: 2px 2px 0 0;
+    background: linear-gradient(180deg, #2a6827, #4a9e3a);
+    flex-shrink: 0;
+    position: relative;
+  }
+  /* Tom søyle (ingen data ennå) — stipla */
+  .bar-empty {
+    width: 9px; height: 40px;
+    border-radius: 2px 2px 0 0;
+    background: repeating-linear-gradient(
+      0deg,
+      #d5d2ca,
+      #d5d2ca 3px,
+      transparent 3px,
+      transparent 6px
+    );
+    flex-shrink: 0;
+  }
+  /* Prikk OVER søyla (leverte innlev.) */
+  .dot-delivered {
+    position: absolute;
+    bottom: 0;
+    left: 50%; transform: translateX(-50%);
+    width: 7px; height: 7px; border-radius: 50%;
+    border: 1.5px solid #2a6827;
+    background: #fff;
+    z-index: 3;
+  }
+  /* Prikk UNDER grunnlinja (ikkje leverte) */
+  .dot-missing {
+    width: 7px; height: 7px; border-radius: 50%;
+    border: 1.5px solid #888; background: #fff;
+    flex-shrink: 0;
+  }
+  .dot-orange { border-color: #e67e22; }
+  .dot-purple { border-color: #7B3FA5; }
+  /* Plass-haldar (ingen prikk under) */
+  .dot-none {
+    width: 7px; height: 7px; flex-shrink: 0;
+  }
+  .nums-row {
+    display: flex; gap: 7px; margin-bottom: 4px;
+  }
+  .below-row {
+    display: flex; gap: 7px; margin-top: 2px;
+  }
+
+  /* ── Ikonstorleik-demo ───────────────────────── */
+  .icon-sizes {
+    display: flex; align-items: center; gap: 16px;
+    background: #1a1f1a; padding: 10px 14px; border-radius: 8px;
+    margin: 10px 10px 12px;
+  }
+  .icon-sizes span { font-size: 9px; color: #666; text-align: center; display: block; margin-top: 4px; }
+</style>
+</head>
+<body>
+
+<h1>Læringslupa — Variant B (amber) · korrekt grafretning · ikonkontrast</h1>
+<p class="ingress">
+  Grøne søyler veks <strong>oppover</strong> frå grunnlinja. Prikkar <strong>under</strong> grunnlinja = ikkje leverte innleveringar. Leverte prikkar ligg oppå søyla.
+  Søylebreidde 9px, prikkdiameter 7px → 1px grønt synleg på kvar side av prikken.
+  Ikonalternativ A (amber) og D (varm krem) — begge vist i 16px og 48px for å vurdere lesbarheit.
+</p>
+
+<div class="row">
+
+  <!-- ── IKON A: AMBER ──────────────────────── -->
+  <div class="card">
+    <div class="card-meta">
+      <div class="card-name">Ikon A — Amber #e8a020</div>
+      <div class="card-desc">Kontrast mot #1a1a1a: <strong>5.6:1</strong> (WCAG AA ✓)<br>Sameint med nedteljingsbaren</div>
+    </div>
+
+    <!-- Ikonstorleik-demo -->
+    <div class="icon-sizes">
+      <!-- 16px -->
+      <div>
+        <svg width="16" height="16" viewBox="0 0 128 128" fill="none">
+          <rect x="6" y="6" width="116" height="116" rx="18" fill="#1a1a1a"/>
+          <circle cx="53" cy="51" r="33" fill="#e8a020" fill-opacity="0.1"/>
+          <circle cx="53" cy="51" r="33" stroke="#e8a020" stroke-width="11" fill="none"/>
+          <line x1="79" y1="77" x2="103" y2="101" stroke="#e8a020" stroke-width="15" stroke-linecap="round"/>
+        </svg>
+        <span>16px</span>
+      </div>
+      <!-- 48px -->
+      <div>
+        <svg width="48" height="48" viewBox="0 0 128 128" fill="none">
+          <rect x="6" y="6" width="116" height="116" rx="18" fill="#1a1a1a"/>
+          <circle cx="53" cy="51" r="33" fill="#e8a020" fill-opacity="0.1"/>
+          <circle cx="53" cy="51" r="33" stroke="#e8a020" stroke-width="11" fill="none"/>
+          <line x1="79" y1="77" x2="103" y2="101" stroke="#e8a020" stroke-width="15" stroke-linecap="round"/>
+        </svg>
+        <span>48px</span>
+      </div>
+    </div>
+
+    <div class="header-cell">
+      <svg class="lupe-icon" viewBox="0 0 128 128" fill="none">
+        <rect x="6" y="6" width="116" height="116" rx="18" fill="#1a1a1a"/>
+        <circle cx="53" cy="51" r="33" fill="#e8a020" fill-opacity="0.1"/>
+        <circle cx="53" cy="51" r="33" stroke="#e8a020" stroke-width="11" fill="none"/>
+        <line x1="79" y1="77" x2="103" y2="101" stroke="#e8a020" stroke-width="15" stroke-linecap="round"/>
+      </svg>
+      Læringslupa
+      <div class="countdown-bar"></div>
+    </div>
+    <div class="cell"><div class="ring ring-full"></div><div class="mark mark-red"></div><div class="progress-wrap"><div class="progress-fill" style="width:80%"></div><div class="progress-marker" style="left:65%"></div></div></div>
+    <div class="cell"><div class="ring ring-empty"></div><div class="mark mark-red"></div><div class="progress-wrap"><div class="progress-fill" style="width:12%"></div><div class="progress-marker" style="left:65%"></div></div></div>
+    <div class="cell"><div class="ring ring-half"></div><div class="mark mark-grey"></div><div class="progress-wrap"><div class="progress-fill" style="width:55%"></div><div class="progress-marker" style="left:65%"></div></div></div>
+    <div class="tooltip">
+      <div class="tip-green">Snitt visning: 76 %</div>
+      <div class="tip-red">○ 27 innleveringer Mangler</div>
+      <hr class="sep">
+      <div class="tip-label">Lærestoff sett per leksjon</div>
+
+      <!-- Leksjonsnummer -->
+      <div class="nums-row">
+        <div class="col-num">16</div>
+        <div class="col-num">17</div>
+        <div class="col-num">18</div>
+        <div class="col-num">19</div>
+        <div class="col-num">20</div>
+        <div class="col-num">21</div>
+        <div class="col-num">22</div>
+        <div class="col-num">23</div>
+      </div>
+
+      <!-- Søyler + leverte prikkar OPPOVER -->
+      <div class="chart-grid">
+        <div class="bar" style="height:52px"><div class="dot-delivered"></div></div>
+        <div class="bar" style="height:30px"></div>
+        <div class="bar-empty"></div>
+        <div class="bar-empty"></div>
+        <div class="bar-empty"></div>
+        <div class="bar-empty"></div>
+        <div class="bar-empty"></div>
+        <div class="bar-empty"></div>
+      </div>
+      <div class="chart-baseline"></div>
+      <!-- Prikkar UNDER grunnlinja = ikkje leverte -->
+      <div class="below-row">
+        <div class="dot-missing dot-orange"></div><!-- levert → over, men vi viser òg ein her for demo -->
+        <div class="dot-missing dot-purple"></div>
+        <div class="dot-missing"></div>
+        <div class="dot-missing"></div>
+        <div class="dot-missing"></div>
+        <div class="dot-missing"></div>
+        <div class="dot-missing"></div>
+        <div class="dot-missing"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── IKON D: VARM KREM ──────────────────── -->
+  <div class="card">
+    <div class="card-meta">
+      <div class="card-name">Ikon D — Varm krem #f0e4c0</div>
+      <div class="card-desc">Kontrast mot #1a1a1a: <strong>10.5:1</strong> (WCAG AAA ✓)<br>Amber-varme utan skrik, best på 16px</div>
+    </div>
+
+    <div class="icon-sizes">
+      <div>
+        <svg width="16" height="16" viewBox="0 0 128 128" fill="none">
+          <rect x="6" y="6" width="116" height="116" rx="18" fill="#1a1a1a"/>
+          <circle cx="53" cy="51" r="33" fill="#f0e4c0" fill-opacity="0.13"/>
+          <circle cx="53" cy="51" r="33" stroke="#f0e4c0" stroke-width="11" fill="none"/>
+          <line x1="79" y1="77" x2="103" y2="101" stroke="#f0e4c0" stroke-width="15" stroke-linecap="round"/>
+        </svg>
+        <span>16px</span>
+      </div>
+      <div>
+        <svg width="48" height="48" viewBox="0 0 128 128" fill="none">
+          <rect x="6" y="6" width="116" height="116" rx="18" fill="#1a1a1a"/>
+          <circle cx="53" cy="51" r="33" fill="#f0e4c0" fill-opacity="0.13"/>
+          <circle cx="53" cy="51" r="33" stroke="#f0e4c0" stroke-width="11" fill="none"/>
+          <line x1="79" y1="77" x2="103" y2="101" stroke="#f0e4c0" stroke-width="15" stroke-linecap="round"/>
+        </svg>
+        <span>48px</span>
+      </div>
+    </div>
+
+    <div class="header-cell">
+      <svg class="lupe-icon" viewBox="0 0 128 128" fill="none">
+        <rect x="6" y="6" width="116" height="116" rx="18" fill="#1a1a1a"/>
+        <circle cx="53" cy="51" r="33" fill="#f0e4c0" fill-opacity="0.13"/>
+        <circle cx="53" cy="51" r="33" stroke="#f0e4c0" stroke-width="11" fill="none"/>
+        <line x1="79" y1="77" x2="103" y2="101" stroke="#f0e4c0" stroke-width="15" stroke-linecap="round"/>
+      </svg>
+      Læringslupa
+      <div class="countdown-bar"></div>
+    </div>
+    <div class="cell"><div class="ring ring-full"></div><div class="mark mark-red"></div><div class="progress-wrap"><div class="progress-fill" style="width:80%"></div><div class="progress-marker" style="left:65%"></div></div></div>
+    <div class="cell"><div class="ring ring-empty"></div><div class="mark mark-red"></div><div class="progress-wrap"><div class="progress-fill" style="width:12%"></div><div class="progress-marker" style="left:65%"></div></div></div>
+    <div class="cell"><div class="ring ring-half"></div><div class="mark mark-grey"></div><div class="progress-wrap"><div class="progress-fill" style="width:55%"></div><div class="progress-marker" style="left:65%"></div></div></div>
+    <div class="tooltip">
+      <div class="tip-green">Snitt visning: 76 %</div>
+      <div class="tip-red">○ 27 innleveringer Mangler</div>
+      <hr class="sep">
+      <div class="tip-label">Lærestoff sett per leksjon</div>
+
+      <div class="nums-row">
+        <div class="col-num">16</div>
+        <div class="col-num">17</div>
+        <div class="col-num">18</div>
+        <div class="col-num">19</div>
+        <div class="col-num">20</div>
+        <div class="col-num">21</div>
+        <div class="col-num">22</div>
+        <div class="col-num">23</div>
+      </div>
+
+      <div class="chart-grid">
+        <div class="bar" style="height:52px"><div class="dot-delivered"></div></div>
+        <div class="bar" style="height:30px"></div>
+        <div class="bar-empty"></div>
+        <div class="bar-empty"></div>
+        <div class="bar-empty"></div>
+        <div class="bar-empty"></div>
+        <div class="bar-empty"></div>
+        <div class="bar-empty"></div>
+      </div>
+      <div class="chart-baseline"></div>
+      <div class="below-row">
+        <div class="dot-missing dot-orange"></div>
+        <div class="dot-missing dot-purple"></div>
+        <div class="dot-missing"></div>
+        <div class="dot-missing"></div>
+        <div class="dot-missing"></div>
+        <div class="dot-missing"></div>
+        <div class="dot-missing"></div>
+        <div class="dot-missing"></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div style="margin-top:50px; font-size:10px; color:#aaa; line-height:2.1; max-width:700px;">
+  <strong style="color:#bbb">Nøkkeltal:</strong><br>
+  Søylebreidde: 9px · Prikkdiameter: 7px · Grønt synleg på kvar side: 1px<br>
+  Leverte prikkar: ligg oppå søyla (z-index: 3) · Ikkje leverte: under grunnlinja<br>
+  Ikonfarge A (#e8a020): kontrast 5.6:1 AA · Ikonfarge D (#f0e4c0): kontrast 10.5:1 AAA<br>
+  Valt ikonfarge → endre <code>WHITE</code> i gen_icons.py og køyr <code>python3 gen_icons.py</code>
+</div>
+
+</body>
+</html>

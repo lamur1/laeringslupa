@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="no">
+<head>
+<meta charset="UTF-8">
+<title>Læringslupa — palettvariantar</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: LatoWeb, Lato, -apple-system, sans-serif;
+    background: #d6d3cc;
+    padding: 40px 32px 80px;
+    color: #2d3b45;
+  }
+  h1 {
+    font-size: 11px; font-weight: 700; letter-spacing: .10em;
+    text-transform: uppercase; color: #888; margin-bottom: 8px;
+  }
+  .ingress {
+    font-size: 11px; color: #999; margin-bottom: 40px; line-height: 1.6;
+    max-width: 860px;
+  }
+  .variants {
+    display: flex; gap: 32px; flex-wrap: wrap; align-items: flex-start;
+  }
+
+  /* ── Kort-ramme ─────────────────────────────────────── */
+  .card {
+    background: #e8e5de;
+    border-radius: 16px;
+    box-shadow: 0 3px 18px rgba(0,0,0,.13);
+    overflow: hidden;
+    width: 260px;
+  }
+  .card-meta {
+    padding: 14px 16px 12px;
+    border-bottom: 1px solid #d0cdc5;
+  }
+  .card-name {
+    font-size: 12px; font-weight: 700; color: #333; margin-bottom: 3px;
+  }
+  .card-desc {
+    font-size: 10px; color: #888; line-height: 1.5;
+  }
+
+  /* ── Canvas-kontekst (simulert gradebook-topptekst) ─── */
+  .canvas-ctx {
+    background: #fff;
+    border-bottom: 1px solid #e0ddd6;
+    padding: 6px 12px;
+    font-size: 10px;
+    color: #555;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .canvas-check { color: #00AC18; font-size: 13px; }
+
+  /* ── Tittelcelle ────────────────────────────────────── */
+  .header-cell {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    height: 36px;
+    font-size: 11px;
+    font-weight: 600;
+    color: #fff;
+    background: #1a1f1a;
+    overflow: hidden;
+    letter-spacing: .03em;
+  }
+  .header-cell img {
+    width: 18px; height: 18px; border-radius: 3px; flex-shrink: 0;
+  }
+  .countdown-bar {
+    position: absolute;
+    bottom: 0; left: 0;
+    height: 2.5px;
+    width: 62%; /* simulert ~3 min att */
+  }
+
+  /* ── Elevceller ─────────────────────────────────────── */
+  .cell {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    padding: 0 8px;
+    height: 34px;
+    border-bottom: 0.5px solid #eceae2;
+    background: #f7f5f0;
+  }
+  .ring {
+    width: 15px; height: 15px; border-radius: 50%; flex-shrink: 0;
+  }
+  .ring-full   { background: #3d8b37; }
+  .ring-half   { background: conic-gradient(#3d8b37 0% 55%, #c8c5bd 55% 100%); }
+  .ring-empty  { background: #c8c5bd; }
+  .mark {
+    width: 12px; height: 12px; border-radius: 2px; flex-shrink: 0;
+  }
+  .mark-red    { border: 1.5px solid #c0392b; background: #fdecea; }
+  .mark-grey   { border: 1.5px solid #aaa; background: transparent; }
+  .mark-green  { background: #3d8b37; border: 1.5px solid #2a6827; }
+  .progress-wrap {
+    flex: 1; height: 4px; background: #d8d5cc;
+    border-radius: 2px; position: relative; min-width: 20px;
+  }
+  .progress-fill {
+    height: 100%; border-radius: 2px;
+    background: linear-gradient(90deg, #97c459, #3b6d11);
+  }
+  .progress-marker {
+    position: absolute; top: -4px; width: 2px; height: 11px;
+    background: #888; border-radius: 1px;
+  }
+
+  /* ── Tooltip ────────────────────────────────────────── */
+  .tooltip {
+    background: #fff;
+    border-radius: 10px;
+    box-shadow: 0 3px 14px rgba(0,0,0,.13);
+    padding: 14px;
+    margin: 10px 10px 14px;
+    font-size: 11px;
+    color: #333;
+    line-height: 1.7;
+  }
+  .tooltip-row { display: flex; align-items: baseline; gap: 4px; }
+  .tip-green   { font-weight: 600; }
+  .tip-red     { color: #c0392b; font-weight: 600; }
+  .sep { border: none; border-top: 1px solid #e8e5de; margin: 8px 0; }
+  .tip-label   { font-size: 10px; color: #888; margin-bottom: 6px; }
+
+  /* ── Graf ───────────────────────────────────────────── */
+  .chart {
+    display: flex;
+    align-items: flex-end;
+    gap: 5px;
+    height: 80px;
+    padding: 0 0 0 0;
+    position: relative;
+  }
+  .col-wrap {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0;
+    position: relative;
+  }
+  .col-num {
+    font-size: 8px; color: #999; margin-bottom: 3px;
+  }
+  /* Staben — bredere enn dagens */
+  .bar-col {
+    width: 10px;
+    border-radius: 3px 3px 0 0;
+    flex-shrink: 0;
+  }
+  /* Prikk — innlevering */
+  .dot {
+    width: 7px; height: 7px; border-radius: 50%;
+    border: 1.5px solid #888; background: #fff;
+    margin-top: 1px;
+    flex-shrink: 0;
+  }
+  .dot-orange { border-color: #e67e22; background: #fff; }
+  .dot-purple { border-color: #7B3FA5; background: #fff; }
+  /* Baseline */
+  .baseline {
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    height: 1px; background: #ccc;
+  }
+</style>
+</head>
+<body>
+
+<h1>Læringslupa — palettvariantar</h1>
+<p class="ingress">
+  Fokus: nedteljingsstripa i tittelcella (i dag <strong>#4eca8b</strong> — mintgrønn, kjøleg blågrønn).
+  Stabane er gjort breiare (10px vs. dagens ~5px) og strekker seg 6px forbi basislinja.
+  Canvas sin eigen grønn (#00AC18) er vist i kontekst til høgre i kvar variant.
+</p>
+
+<div class="variants">
+
+  <!-- ── NOVERANDE ─────────────────────────────────── -->
+  <div class="card">
+    <div class="card-meta">
+      <div class="card-name">Noverande</div>
+      <div class="card-desc">Nedteljing: <strong>#4eca8b</strong> mintgrønn<br>Snitt visning: same mintgrønn — ikkje WCAG AA på kvit</div>
+    </div>
+    <div class="canvas-ctx">
+      Canvas-grønn: <span class="canvas-check">✓</span><span style="color:#aaa">– ikkje vår farge</span>
+    </div>
+    <div class="header-cell">
+      <img src="icons/icon48.png"> Læringslupa
+      <div class="countdown-bar" style="background:#4eca8b;"></div>
+    </div>
+    <div class="cell"><div class="ring ring-full"></div><div class="mark mark-red"></div><div class="progress-wrap"><div class="progress-fill" style="width:80%"></div><div class="progress-marker" style="left:65%"></div></div></div>
+    <div class="cell"><div class="ring ring-empty"></div><div class="mark mark-red"></div><div class="progress-wrap"><div class="progress-fill" style="width:12%"></div><div class="progress-marker" style="left:65%"></div></div></div>
+    <div class="cell"><div class="ring ring-half"></div><div class="mark mark-grey"></div><div class="progress-wrap"><div class="progress-fill" style="width:55%"></div><div class="progress-marker" style="left:65%"></div></div></div>
+    <div class="tooltip">
+      <div class="tooltip-row tip-green" style="color:#4eca8b">Snitt visning: 76 %</div>
+      <div class="tooltip-row tip-red">○ 27 innleveringer Mangler</div>
+      <hr class="sep">
+      <div class="tip-label">Lærestoff sett per leksjon</div>
+      <div class="chart">
+        <div class="baseline"></div>
+        <div class="col-wrap"><div class="col-num">16</div><div class="bar-col" style="height:54px;background:linear-gradient(180deg,#2a6827,#4a9e3a);margin-bottom:-6px"></div><div class="dot dot-orange"></div></div>
+        <div class="col-wrap"><div class="col-num">17</div><div class="bar-col" style="height:28px;background:linear-gradient(180deg,#2a6827,#4a9e3a);margin-bottom:-6px"></div><div class="dot dot-purple"></div></div>
+        <div class="col-wrap"><div class="col-num">18</div><div class="bar-col" style="height:0px;background:none;margin-bottom:-6px"></div><div class="dot"></div></div>
+        <div class="col-wrap"><div class="col-num">19</div><div class="bar-col" style="height:0;background:none;margin-bottom:-6px"></div><div class="dot"></div></div>
+        <div class="col-wrap"><div class="col-num">20</div><div class="bar-col" style="height:0;background:none;margin-bottom:-6px"></div><div class="dot"></div></div>
+        <div class="col-wrap"><div class="col-num">21</div><div class="bar-col" style="height:0;background:none;margin-bottom:-6px"></div><div class="dot"></div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── VARIANT A — SKOGGRØNN ─────────────────────── -->
+  <div class="card">
+    <div class="card-meta">
+      <div class="card-name">A — Skoggrønn</div>
+      <div class="card-desc">Nedteljing: <strong>#5aab3f</strong> — same grønfamilie som stabane.<br>Monokromatisk. Snitt visning: <strong>#2d6e1f</strong> — WCAG AA ✓</div>
+    </div>
+    <div class="canvas-ctx">
+      Canvas-grønn: <span class="canvas-check">✓</span><span style="color:#aaa">— harmonerer godt</span>
+    </div>
+    <div class="header-cell">
+      <img src="icons/icon48.png"> Læringslupa
+      <div class="countdown-bar" style="background:#5aab3f;"></div>
+    </div>
+    <div class="cell"><div class="ring ring-full"></div><div class="mark mark-red"></div><div class="progress-wrap"><div class="progress-fill" style="width:80%"></div><div class="progress-marker" style="left:65%"></div></div></div>
+    <div class="cell"><div class="ring ring-empty"></div><div class="mark mark-red"></div><div class="progress-wrap"><div class="progress-fill" style="width:12%"></div><div class="progress-marker" style="left:65%"></div></div></div>
+    <div class="cell"><div class="ring ring-half"></div><div class="mark mark-grey"></div><div class="progress-wrap"><div class="progress-fill" style="width:55%"></div><div class="progress-marker" style="left:65%"></div></div></div>
+    <div class="tooltip">
+      <div class="tooltip-row tip-green" style="color:#2d6e1f">Snitt visning: 76 %</div>
+      <div class="tooltip-row tip-red">○ 27 innleveringer Mangler</div>
+      <hr class="sep">
+      <div class="tip-label">Lærestoff sett per leksjon</div>
+      <div class="chart">
+        <div class="baseline"></div>
+        <div class="col-wrap"><div class="col-num">16</div><div class="bar-col" style="height:54px;background:linear-gradient(180deg,#2a6827,#4a9e3a);margin-bottom:-6px"></div><div class="dot dot-orange"></div></div>
+        <div class="col-wrap"><div class="col-num">17</div><div class="bar-col" style="height:28px;background:linear-gradient(180deg,#2a6827,#4a9e3a);margin-bottom:-6px"></div><div class="dot dot-purple"></div></div>
+        <div class="col-wrap"><div class="col-num">18</div><div class="bar-col" style="height:0;background:none;margin-bottom:-6px"></div><div class="dot"></div></div>
+        <div class="col-wrap"><div class="col-num">19</div><div class="bar-col" style="height:0;background:none;margin-bottom:-6px"></div><div class="dot"></div></div>
+        <div class="col-wrap"><div class="col-num">20</div><div class="bar-col" style="height:0;background:none;margin-bottom:-6px"></div><div class="dot"></div></div>
+        <div class="col-wrap"><div class="col-num">21</div><div class="bar-col" style="height:0;background:none;margin-bottom:-6px"></div><div class="dot"></div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── VARIANT B — AMBER ──────────────────────────── -->
+  <div class="card">
+    <div class="card-meta">
+      <div class="card-name">B — Amber/gull</div>
+      <div class="card-desc">Nedteljing: <strong>#e8a020</strong> — varm, bryt grønt-overfloda.<br>Snitt visning: <strong>#2d6e1f</strong> skoggrønn — WCAG AA ✓</div>
+    </div>
+    <div class="canvas-ctx">
+      Canvas-grønn: <span class="canvas-check">✓</span><span style="color:#aaa">— komplementkontrast</span>
+    </div>
+    <div class="header-cell">
+      <img src="icons/icon48.png"> Læringslupa
+      <div class="countdown-bar" style="background:#e8a020;"></div>
+    </div>
+    <div class="cell"><div class="ring ring-full"></div><div class="mark mark-red"></div><div class="progress-wrap"><div class="progress-fill" style="width:80%"></div><div class="progress-marker" style="left:65%"></div></div></div>
+    <div class="cell"><div class="ring ring-empty"></div><div class="mark mark-red"></div><div class="progress-wrap"><div class="progress-fill" style="width:12%"></div><div class="progress-marker" style="left:65%"></div></div></div>
+    <div class="cell"><div class="ring ring-half"></div><div class="mark mark-grey"></div><div class="progress-wrap"><div class="progress-fill" style="width:55%"></div><div class="progress-marker" style="left:65%"></div></div></div>
+    <div class="tooltip">
+      <div class="tooltip-row tip-green" style="color:#2d6e1f">Snitt visning: 76 %</div>
+      <div class="tooltip-row tip-red">○ 27 innleveringer Mangler</div>
+      <hr class="sep">
+      <div class="tip-label">Lærestoff sett per leksjon</div>
+      <div class="chart">
+        <div class="baseline"></div>
+        <div class="col-wrap"><div class="col-num">16</div><div class="bar-col" style="height:54px;background:linear-gradient(180deg,#2a6827,#4a9e3a);margin-bottom:-6px"></div><div class="dot dot-orange"></div></div>
+        <div class="col-wrap"><div class="col-num">17</div><div class="bar-col" style="height:28px;background:linear-gradient(180deg,#2a6827,#4a9e3a);margin-bottom:-6px"></div><div class="dot dot-purple"></div></div>
+        <div class="col-wrap"><div class="col-num">18</div><div class="bar-col" style="height:0;background:none;margin-bottom:-6px"></div><div class="dot"></div></div>
+        <div class="col-wrap"><div class="col-num">19</div><div class="bar-col" style="height:0;background:none;margin-bottom:-6px"></div><div class="dot"></div></div>
+        <div class="col-wrap"><div class="col-num">20</div><div class="bar-col" style="height:0;background:none;margin-bottom:-6px"></div><div class="dot"></div></div>
+        <div class="col-wrap"><div class="col-num">21</div><div class="bar-col" style="height:0;background:none;margin-bottom:-6px"></div><div class="dot"></div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── VARIANT C — INDIGO ─────────────────────────── -->
+  <div class="card">
+    <div class="card-meta">
+      <div class="card-name">C — Indigo/slate</div>
+      <div class="card-desc">Nedteljing: <strong>#7b8fd4</strong> — teknisk, roleg, bryt heilt ut av grønt.<br>Snitt visning: <strong>#2d6e1f</strong> skoggrønn — WCAG AA ✓</div>
+    </div>
+    <div class="canvas-ctx">
+      Canvas-grønn: <span class="canvas-check">✓</span><span style="color:#aaa">— split-komplementær</span>
+    </div>
+    <div class="header-cell">
+      <img src="icons/icon48.png"> Læringslupa
+      <div class="countdown-bar" style="background:#7b8fd4;"></div>
+    </div>
+    <div class="cell"><div class="ring ring-full"></div><div class="mark mark-red"></div><div class="progress-wrap"><div class="progress-fill" style="width:80%"></div><div class="progress-marker" style="left:65%"></div></div></div>
+    <div class="cell"><div class="ring ring-empty"></div><div class="mark mark-red"></div><div class="progress-wrap"><div class="progress-fill" style="width:12%"></div><div class="progress-marker" style="left:65%"></div></div></div>
+    <div class="cell"><div class="ring ring-half"></div><div class="mark mark-grey"></div><div class="progress-wrap"><div class="progress-fill" style="width:55%"></div><div class="progress-marker" style="left:65%"></div></div></div>
+    <div class="tooltip">
+      <div class="tooltip-row tip-green" style="color:#2d6e1f">Snitt visning: 76 %</div>
+      <div class="tooltip-row tip-red">○ 27 innleveringer Mangler</div>
+      <hr class="sep">
+      <div class="tip-label">Lærestoff sett per leksjon</div>
+      <div class="chart">
+        <div class="baseline"></div>
+        <div class="col-wrap"><div class="col-num">16</div><div class="bar-col" style="height:54px;background:linear-gradient(180deg,#2a6827,#4a9e3a);margin-bottom:-6px"></div><div class="dot dot-orange"></div></div>
+        <div class="col-wrap"><div class="col-num">17</div><div class="bar-col" style="height:28px;background:linear-gradient(180deg,#2a6827,#4a9e3a);margin-bottom:-6px"></div><div class="dot dot-purple"></div></div>
+        <div class="col-wrap"><div class="col-num">18</div><div class="bar-col" style="height:0;background:none;margin-bottom:-6px"></div><div class="dot"></div></div>
+        <div class="col-wrap"><div class="col-num">19</div><div class="bar-col" style="height:0;background:none;margin-bottom:-6px"></div><div class="dot"></div></div>
+        <div class="col-wrap"><div class="col-num">20</div><div class="bar-col" style="height:0;background:none;margin-bottom:-6px"></div><div class="dot"></div></div>
+        <div class="col-wrap"><div class="col-num">21</div><div class="bar-col" style="height:0;background:none;margin-bottom:-6px"></div><div class="dot"></div></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div style="margin-top:48px; font-size:10px; color:#aaa; line-height:2.0; max-width:700px;">
+  <strong style="color:#bbb">Merknader:</strong><br>
+  Stabbreidde auka frå ~5px til 10px i alle variantar.<br>
+  Stabane strekker seg 6px under basislinja — prikkane ligg inni staben, ikkje under.<br>
+  "Snitt visning"-tekst er endra frå mintgrønn til <strong>#2d6e1f</strong> (skoggrønn, WCAG AA på kvit) i alle variantar.<br>
+  Ikonet lastar berre om du opnar fila frå rotmappa til utvidinga.
+</div>
+
+</body>
+</html>

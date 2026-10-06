@@ -54,6 +54,20 @@
   let moduleMapGlobal = {}; // modId -> [assignments] (modul-nivå for kopieringslenker)
   let moduleNameMapGlobal = {}; // modId -> name
 
+  // ─── Differensieringstag → geometrisk form (difftag-kurs) ───────────────────
+  // Difftag stempler spor-ikonet først i oppgavetittelen og lagrer det i Canvas
+  // («🔷👀 L 17 – …»). Formen leses rett fra tittelen – ingen ekstra API-kall og
+  // ingen kobling til difftags interne datamodell. Vanlige kurs har ingen spor-
+  // ikoner, så alt blir sirkler (uendret oppførsel).
+  // VIKTIG: match kun spor-ikonene (hviteliste). Lærerens egne ikoner på felles
+  // innhold (📖 o.l.) skal IKKE tolkes som spor. Difftag garanterer at spor+område
+  // står først i tittelen; byggemerkene 🛠️/🚩 kommer etter.
+  const SPOR_FORM = { '🔷': 'diamant', '🟦': 'firkant' };
+  function sporForm(name) {
+    const m = (name || '').match(/^\s*(🔷|🟦)/u);
+    return m ? SPOR_FORM[m[1]] : 'sirkel';
+  }
+
   const COPY_SVG  = '<svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor" stroke-width="1.1" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="0.5" width="8.5" height="8.5" rx="1.3"/><rect x="0.5" y="4" width="8.5" height="8.5" rx="1.3" fill="white" stroke="currentColor"/></svg>';
   const CHECK_SVG = '<svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="#3b6d11" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="1.5,7 5,10.5 11.5,2.5"/></svg>';
   const SAVE_SVG  = '<svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor" stroke-width="1.1" stroke-linecap="round" stroke-linejoin="round"><line x1="6.5" y1="1.5" x2="6.5" y2="8.5"/><polyline points="4,6.5 6.5,9 9,6.5"/><line x1="2" y1="11.5" x2="11" y2="11.5"/></svg>';
@@ -705,6 +719,8 @@
       let hoppetOver = 0;
       const skippedPerMod = {};
       const missingByMod = {};
+      const missingFormsPerMod = {};  // modId -> [form,...] for mangel-prikker
+      const excusedFormsPerMod = {};  // modId -> [form,...] for fritatt-prikker
       Object.entries(moduleMapGlobal).forEach(([modId, modAssignments]) => {
         modAssignments.forEach(asgn => {
           if (!asgn.due_at) return;
@@ -747,6 +763,7 @@
           // hasActivity=true for fritatt utan innlevering (workflow_state='excused', ingen sub).
           if (isExcused) {
             lessons[modId].excused = (lessons[modId].excused || 0) + 1;
+            (excusedFormsPerMod[modId] || (excusedFormsPerMod[modId] = [])).push(sporForm(asgn.name));
           } else if (isDelivered) {
             lessons[modId].delivered++;
             const isGraded = !!(
@@ -773,6 +790,7 @@
             lessons[modId].missing++;
             hoppetOver++;
             skippedPerMod[modId] = (skippedPerMod[modId] || 0) + 1;
+            (missingFormsPerMod[modId] || (missingFormsPerMod[modId] = [])).push(sporForm(asgn.name));
             // Spor hvilke spesifikke oppgaver som mangler (for kopieringslenker)
             if (!missingByMod[modId]) missingByMod[modId] = [];
             missingByMod[modId].push({
@@ -825,9 +843,11 @@
       // Per-modul leverte oppgaver (for batteriprikker) — identisk filter som elevvisning:
       // kun oppgaver med frist som teller i sluttkarakteren (ikke frivillige).
       const deliveredPerMod = {};
+      const deliveredFormsPerMod = {};
       Object.entries(moduleMapGlobal).forEach(([modId, modAssigns]) => {
         const relevant = modAssigns.filter(a => a.due_at && !a.omit_from_final_grade);
         let count = 0;
+        const forms = [];
         relevant.forEach(a => {
           const sub = subs.find(s => String(s.assignment_id) === String(a.id));
           const hasActivity = sub && (
@@ -839,9 +859,9 @@
           );
           const isForcedMiss = !!(sub && sub.missing === true);
           const isExcused    = !!(sub?.workflow_state === 'excused' || sub?.excused === true);
-          if (hasActivity && !isForcedMiss && !isExcused) count++;
+          if (hasActivity && !isForcedMiss && !isExcused) { count++; forms.push(sporForm(a.name)); }
         });
-        if (count > 0) deliveredPerMod[modId] = count;
+        if (count > 0) { deliveredPerMod[modId] = count; deliveredFormsPerMod[modId] = forms; }
       });
 
       // Aktive moduler (for snitt-visning) — beholder opprinnelig logikk
@@ -850,6 +870,8 @@
         if (l.delivered > 0 || l.missing > 0) activeMods.push(modId);
       });
       studentData[sid].deliveredPerMod = deliveredPerMod;
+      studentData[sid].deliveredForms  = deliveredFormsPerMod;
+      studentData[sid].excusedForms    = excusedFormsPerMod;
       studentData[sid].activeMods      = activeMods;
       const venterPerMod  = {};
       const excusedPerMod = {};
@@ -878,6 +900,7 @@
         studentData[sid].venterVurdering = venterVurderingDirekt;
         studentData[sid].hoppetOver      = hoppetOver;
         studentData[sid].skippedPerMod   = skippedPerMod;
+        studentData[sid].missingForms    = missingFormsPerMod;
         studentData[sid].missingByMod    = missingByMod;
         studentData[sid].totalt          = totalt;
       } else if (hasAnyDeadlines) {
@@ -1221,7 +1244,8 @@
                 showTip(e, buildTooltip(lDays, sDays, d.deadlineDelta,
                   d.deadlineCount, d.godkjent, d.venterVurdering,
                   d.totalt, d.leksjonerEtter, cached, d.hoppetOver, d.skippedPerMod,
-                  d.deliveredPerMod, d.activeMods, d.venterPerMod, d.excusedPerMod), tooltipFontSize);
+                  d.deliveredPerMod, d.activeMods, d.venterPerMod, d.excusedPerMod,
+                  { delivered: d.deliveredForms, missing: d.missingForms, excused: d.excusedForms }), tooltipFontSize);
 
                 // Hent moduldata hvis ikke cachet
                 if (!moduleCompletionCache.hasOwnProperty(sid)) {
@@ -1239,7 +1263,8 @@
                     tooltipEl.innerHTML = buildTooltip(lDays, sDays, d.deadlineDelta,
                       d.deadlineCount, d.godkjent, d.venterVurdering,
                       d.totalt, d.leksjonerEtter, moduleCompletionCache[sid], d.hoppetOver, d.skippedPerMod,
-                      d.deliveredPerMod, d.activeMods, d.venterPerMod, d.excusedPerMod);
+                      d.deliveredPerMod, d.activeMods, d.venterPerMod, d.excusedPerMod,
+                      { delivered: d.deliveredForms, missing: d.missingForms, excused: d.excusedForms });
                     if (lastTipEvent) moveTip(lastTipEvent);
                   }
                 }
@@ -1577,6 +1602,7 @@
         i.completion_requirement.type !== 'must_mark_done'
       ).map(i => ({
         contentId: String(i.content_id),
+        title:     i.title,
         completed: !!i.completion_requirement.completed
       }));
       return { id: String(mod.id), name: mod.name, total: viewItems.length, completed, dotItems };
@@ -1599,8 +1625,12 @@
     const newDelivered = {};
     const newSkipped   = {};
     const newExcused   = {};
+    const newDeliveredForms = {};  // modId -> [form,...] parallelt med tellingene
+    const newMissingForms   = {};
+    const newExcusedForms   = {};
     modules.forEach(mod => {
       let delivered = 0, missing = 0, excused = 0;
+      const dForms = [], mForms = [], eForms = [];
       (mod.dotItems || []).forEach(di => {
         const isForcedMiss = missingSet.has(di.contentId);
         const isExcused    = excusedSet.has(di.contentId);
@@ -1608,21 +1638,25 @@
         if (!dueAt) return; // Oppgåvar utan datofrist skal ikkje gje prikk
         const due          = new Date(dueAt);
         const isPastDue    = due <= now;
+        const form         = sporForm(di.title);
         if (isExcused) {
-          excused++;
+          excused++; eForms.push(form);
         } else if (di.completed && !isForcedMiss) {
-          delivered++;
+          delivered++; dForms.push(form);
         } else if (isForcedMiss || isPastDue) {
-          missing++;
+          missing++; mForms.push(form);
         }
       });
-      if (delivered > 0) newDelivered[mod.id] = delivered;
-      if (missing > 0)   newSkipped[mod.id]   = missing;
-      if (excused > 0)   newExcused[mod.id]   = excused;
+      if (delivered > 0) { newDelivered[mod.id] = delivered; newDeliveredForms[mod.id] = dForms; }
+      if (missing > 0)   { newSkipped[mod.id]   = missing;   newMissingForms[mod.id]   = mForms; }
+      if (excused > 0)   { newExcused[mod.id]   = excused;   newExcusedForms[mod.id]   = eForms; }
     });
     studentData[sid].deliveredPerMod = newDelivered;
     studentData[sid].skippedPerMod   = newSkipped;
     studentData[sid].excusedPerMod   = newExcused;
+    studentData[sid].deliveredForms  = newDeliveredForms;
+    studentData[sid].missingForms    = newMissingForms;
+    studentData[sid].excusedForms    = newExcusedForms;
     studentData[sid].hoppetOver      = Object.values(newSkipped).reduce((a, b) => a + b, 0);
   }
 
@@ -1640,7 +1674,26 @@
     return m ? parseInt(m[0], 10) : null;
   }
 
-  function makeBatterySvg(modules, skippedPerMod = {}, deliveredPerMod = {}, lessonOffset = 0, venterPerMod = {}, excusedPerMod = {}) {
+  // Tegn en innleveringsprikk i gitt spor-form (sirkel/diamant/firkant) med lik
+  // opplevd flate som sirkelen. Status-styling (fill/kant/kantbredde) er identisk
+  // uansett form — farge = status, form = tag. Ukjent form faller til sirkel.
+  function tegnPrikk(cx, cy, r, form, fill, stroke, strokeWidth) {
+    const st = `fill="${fill}" stroke="${stroke}" stroke-width="${strokeWidth}"`;
+    if (form === 'diamant') {
+      const h = r * 1.2533;  // halvdiagonal gir lik flate som sirkel radius r
+      const top = (cy - h).toFixed(2), bot = (cy + h).toFixed(2);
+      const left = (cx - h).toFixed(2), right = (cx + h).toFixed(2);
+      return `<polygon points="${cx},${top} ${right},${cy} ${cx},${bot} ${left},${cy}" ${st}/>`;
+    }
+    if (form === 'firkant') {
+      const half = r * 0.886;  // halv side gir lik flate som sirkel radius r
+      const s = (half * 2).toFixed(2);
+      return `<rect x="${(cx - half).toFixed(2)}" y="${(cy - half).toFixed(2)}" width="${s}" height="${s}" rx="0.8" ${st}/>`;
+    }
+    return `<circle cx="${cx}" cy="${cy}" r="${r}" ${st}/>`;
+  }
+
+  function makeBatterySvg(modules, skippedPerMod = {}, deliveredPerMod = {}, lessonOffset = 0, venterPerMod = {}, excusedPerMod = {}, forms = {}) {
     const labelH = 16;  // plass til leksjonsnummer øverst (45°-rotert tekst)
     const upH = 55, downH = 55;
     const totalH = labelH + upH + downH;
@@ -1709,6 +1762,27 @@
       }
     });
 
+    // Pålitelig reserve for prikk-form: modulenes egne spor-former (lest direkte frå
+    // oppgavetitlane). Brukast når dei forhåndsbygde listene ikkje er klare enno
+    // (t.d. ved cache-snarvei før processStudentData har køyrt). Kvar modul har éin
+    // peikar som dei fire prikk-løkkene deler, så same oppgåve ikkje gjev to prikkar
+    // med same form. moduleMapGlobal er alltid fylt ved teikning (same som future).
+    const poolByMod = {};
+    const cursorByMod = {};
+    modules.forEach(mod => {
+      poolByMod[mod.id] = (moduleMapGlobal[mod.id] || [])
+        .filter(a => a.due_at && !a.omit_from_final_grade)
+        .map(a => sporForm(a.name));
+      cursorByMod[mod.id] = 0;
+    });
+    const prikkForm = (modId, arr, k) => {
+      if (arr && k < arr.length) return arr[k];           // forhåndsbygd = nøyaktig
+      const pool = poolByMod[modId] || [];
+      const c = cursorByMod[modId] || 0;
+      cursorByMod[modId] = c + 1;
+      return pool[c] || 'sirkel';
+    };
+
     // Prikker over midtlinjen — leverte oppgaver (oransje kant = venter vurdering, grønn kant = vurdert)
     // og fritatte oppgaver (gul/oransje kant). Returnerer berre om begge er 0.
     modules.forEach((mod, i) => {
@@ -1720,20 +1794,23 @@
       const cx      = i * (barW + gap) + barW / 2;
       const r = 3, dotGap = 2;
       const maxDots = Math.floor(upH / (r * 2 + dotGap));
+      // Spor-former: venter+vurdert deler samme leverte-liste; venter tegnes først.
+      const dForms = (forms.delivered || {})[mod.id] || [];
+      const eForms = (forms.excused   || {})[mod.id] || [];
       let d = 0;
       for (let v = 0; v < Math.min(venter, maxDots); v++, d++) {
         const cy = midY - r - 2 - d * (r * 2 + dotGap);
-        bars += `<circle cx="${cx}" cy="${cy}" r="${r}" fill="white" stroke="#e65100" stroke-width="1.8"/>`;
+        bars += tegnPrikk(cx, cy, r, prikkForm(mod.id, dForms, v), 'white', '#e65100', 1.8);
       }
       for (let g = 0; g < Math.min(vurdert, maxDots - d); g++, d++) {
         const cy = midY - r - 2 - d * (r * 2 + dotGap);
-        bars += `<circle cx="${cx}" cy="${cy}" r="${r}" fill="white" stroke="#3b6d11" stroke-width="0.8"/>`;
+        bars += tegnPrikk(cx, cy, r, prikkForm(mod.id, dForms, venter + g), 'white', '#3b6d11', 0.8);
       }
-      // Fritatt-prikkar: stipla grå kant — tydeleg skilt frå venter (oransje) og vurdert (grøn)
+      // Fritatt-prikkar: lilla kant — tydeleg skilt frå venter (oransje) og vurdert (grøn)
       const excused = (excusedPerMod || {})[mod.id] || 0;
       for (let e = 0; e < Math.min(excused, maxDots - d); e++, d++) {
         const cy = midY - r - 2 - d * (r * 2 + dotGap);
-        bars += `<circle cx="${cx}" cy="${cy}" r="${r}" fill="white" stroke="#7B3FA5" stroke-width="1.8"/>`;
+        bars += tegnPrikk(cx, cy, r, prikkForm(mod.id, eForms, e), 'white', '#7B3FA5', 1.8);
       }
     });
 
@@ -1745,9 +1822,10 @@
       const r = 3, dotGap = 2;
       const maxDots = Math.floor(downH / (r * 2 + dotGap));
       const dots    = Math.min(count, maxDots);
+      const mForms  = (forms.missing || {})[mod.id] || [];
       for (let d = 0; d < dots; d++) {
         const cy = midY + r + 2 + d * (r * 2 + dotGap);
-        bars += `<circle cx="${cx}" cy="${cy}" r="${r}" fill="white" stroke="#3a3a3a" stroke-width="0.8"/>`;
+        bars += tegnPrikk(cx, cy, r, prikkForm(mod.id, mForms, d), 'white', '#3a3a3a', 0.8);
       }
     });
 
@@ -1756,17 +1834,19 @@
       const due       = moduleDeadlineMap[mod.id] || null;
       const isPastDue = due && due <= now;
       if (isPastDue) return;
-      const futureCount      = (moduleMapGlobal[mod.id] || []).filter(a => a.due_at && !a.omit_from_final_grade).length;
+      const futureAssigns    = (moduleMapGlobal[mod.id] || []).filter(a => a.due_at && !a.omit_from_final_grade);
       const alreadyDelivered = (deliveredPerMod || {})[mod.id] || 0;
-      const remaining        = futureCount - alreadyDelivered;
+      const remaining        = futureAssigns.length - alreadyDelivered;
       if (remaining <= 0) return;
       const cx      = i * (barW + gap) + barW / 2;
       const r = 3, dotGap = 2;
       const maxDots = Math.floor(downH / (r * 2 + dotGap));
       const dots    = Math.min(remaining, maxDots);
+      // Fremtidsprikkenes form følger elementenes spor-ikon (forhåndsvisning).
+      const fForms  = futureAssigns.map(a => sporForm(a.name));
       for (let d = 0; d < dots; d++) {
         const cy = midY + r + 2 + d * (r * 2 + dotGap);
-        bars += `<circle cx="${cx}" cy="${cy}" r="${r}" fill="#dedad4" stroke="#888780" stroke-width="1"/>`;
+        bars += tegnPrikk(cx, cy, r, fForms[d] || 'sirkel', '#dedad4', '#888780', 1);
       }
     });
 
@@ -1774,7 +1854,7 @@
       overflow="visible" style="display:block;margin-top:20px;min-width:${W}px">${defs}${bars}</svg>`;
   }
 
-  function buildTooltip(loginDays, subDays, delta, count, godkjent, venterVurdering, totalt, leksjonerEtter, batteryModules, hoppetOver, skippedPerMod, deliveredPerMod, activeMods, venterPerMod, excusedPerMod) {
+  function buildTooltip(loginDays, subDays, delta, count, godkjent, venterVurdering, totalt, leksjonerEtter, batteryModules, hoppetOver, skippedPerMod, deliveredPerMod, activeMods, venterPerMod, excusedPerMod, forms = {}) {
     const l = loginDays === null
       ? 'Ikke innlogget ennå'
       : `Innlogget: ${loginDays} dag${loginDays === 1 ? '' : 'er'} siden`;
@@ -1823,7 +1903,7 @@
       if (relevant.length > 0) {
         battery = '<div style="margin-top:7px;border-top:0.5px solid #e8e6de;padding-top:5px">'
           + '<div style="font-size:11px;color:#5f5e5a;margin-bottom:4px">Lærestoff sett per leksjon</div>'
-          + makeBatterySvg(batteryModules, skippedPerMod || {}, deliveredPerMod || {}, detectSemesterOffset(), venterPerMod || {}, excusedPerMod || {})
+          + makeBatterySvg(batteryModules, skippedPerMod || {}, deliveredPerMod || {}, detectSemesterOffset(), venterPerMod || {}, excusedPerMod || {}, forms)
           + '</div>';
       }
     }
@@ -1915,7 +1995,8 @@
       name, lDays, sDays, d.deadlineDelta, d.godkjent, d.totalt,
       d.leksjonerEtter, d.venterVurdering, d.hoppetOver,
       d.missingByMod || {}, batData, d.skippedPerMod || {},
-      d.deliveredPerMod || {}, d.activeMods, d.venterPerMod || {}, d.excusedPerMod || {}
+      d.deliveredPerMod || {}, d.activeMods, d.venterPerMod || {}, d.excusedPerMod || {},
+      { delivered: d.deliveredForms, missing: d.missingForms, excused: d.excusedForms }
     );
 
     const blob = await svgToPng(svgStr);
@@ -1935,7 +2016,7 @@
 
   function buildStudentCardSvg(name, lDays, sDays, delta, godkjent, totalt,
       leksjonerEtter, venterVurdering, hoppetOver, missingByMod, batData, skippedPerMod,
-      deliveredPerMod, activeMods, venterPerMod, excusedPerMod) {
+      deliveredPerMod, activeMods, venterPerMod, excusedPerMod, forms = {}) {
     const W      = 340;
     const pad    = 14;
     const lineH  = 17;
@@ -1981,7 +2062,7 @@
     // Batteridiagram
     let batParts = null;
     if (batData && batData.length > 0 && batData.some(m => m.total > 0)) {
-      const batSvg = makeBatterySvg(batData, skippedPerMod || {}, deliveredPerMod || {}, detectSemesterOffset(), venterPerMod || {}, excusedPerMod || {});
+      const batSvg = makeBatterySvg(batData, skippedPerMod || {}, deliveredPerMod || {}, detectSemesterOffset(), venterPerMod || {}, excusedPerMod || {}, forms);
       batParts = extractSvgContent(batSvg);
     }
 
