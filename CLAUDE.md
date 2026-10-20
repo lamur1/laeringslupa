@@ -2,6 +2,8 @@
 
 Chrome-utvidelse (MV3) for Canvas LMS. Legg til ei svevande aktivitetskolonne i gradebook som viser innloggings- og innleveringsaktivitet per elev. Utvikla for Globalskolen — norsk nettskule for barn i utlandet.
 
+> **Åpen designoppgave:** se [`PLAN.md`](PLAN.md) — planlagt (men utsatt) port fra Chrome-utvidelse til Canvas tema-JS, så lærere slipper å laste ned/oppdatere lokalt. Les den før arbeid på distribusjon/oppdateringsflyt.
+
 ## Prosjektstruktur
 
 | Fil | Rolle |
@@ -48,7 +50,22 @@ Desse reglane vart brotne 20.04.2026 og kosta ein økt å rette opp:
   `dotItems` i `fetchModuleCompletion` filtrerer bort `must_view` og `must_mark_done` — berre `must_submit`-element når `recalcDotsFromModules`.
   Oppgåvar utan `due_at` skal IKKJE gje prikk — `recalcDotsFromModules` returnerer tidleg med `if (!dueAt) return`.
 
-- **FREMTIDSPRIKKER** = `futureCount` minus allereie leverte — aldri `isStarted`-sjekk.
+- **FREMTIDSPRIKKER** = per elev: oppgaver eleven er TILDELT, med frist fram i tid, ikke levert/fritatt — aldri `isStarted`-sjekk.
+  Endret 20.10.2026 (difftag-kurs): før ble modulens felles liste brukt, så det andre sporets oppgaver ble tegnet hos alle.
+  «Tildelt» = det Canvas viser eleven: `visibleKeys` fra `modules?student_id=` (Canvas regner selv ut tag + difftags
+  navnelister + «alle»), koblet til oppgaven via `itemKeyByAssignment`. Før modulene per elev er hentet: oppgaver med
+  `only_visible_to_overrides` teller bare for elever med innleveringsoppføring (Canvas lager dem bare for tildelte).
+  Formen (sirkel/diamant/firkant) leses fra hvert elements egen tittel — aldri fra tildelingen, som kan være navneliste.
+  Verifisert mot fasit i beta-kurs 780: 7 elever × 15 leksjoner, 0 avvik.
+- **FRIST = elevens egen frist** (20.10.2026): `cached_due_date` på elevens innleveringsoppføring, ellers oppgavens
+  `due_at`. Fjerner læreren «Alle» i «Tildel til» og beholder en tag med frist, blir oppgavens `due_at` TOM – fristen
+  ligger bare på tildelingen. Før ga det ingen prikk i det hele tatt («Oppgåvar utan datofrist skal ikkje gje prikk»).
+  For leksjonsnivå (nå-linje, stiplet framtidsboks) får slike oppgaver den seneste elevfristen som reserve.
+- **SPOR-RADEN** (20.10.2026): hovervinduet viser elevens tagger per område, «Spor: 👀 🔷 · 📝 🟦 · 📚 🟦 · 💬 🔷»
+  (`hentSpor`/`sporLinje`). Ett ekstra kall-par per kurs (group_categories + groups med users, non_collaborative), i bakgrunnen;
+  ingen rad i kurs uten tagger. «–» = mangler tag i området; to ikoner = to tagger i samme område.
+- **PRIKKSTØRRELSE** (20.10.2026): radius 4 (var 3), søyle 12/avstand 10 (var 9/11), høyde 66 over og under (var 55)
+  – så sirkel/diamant/firkant kan skilles. Diamant/firkant har samme flate som sirkelen (tegnPrikk).
 
 - **FRITATT** (`excused`) = eigen prikk med kvitt fyll og lilla kant (`fill="white" stroke="#7B3FA5" stroke-width="1.8"`) over grunnlinja i batteriet.
   Canvas kan ha `excused: true` samstundes som `workflow_state === 'submitted'` — sjekk alltid BEGGE:

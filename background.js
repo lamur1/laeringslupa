@@ -9,8 +9,18 @@
 const ALARM_NAME    = 'lupa_refresh';
 const ALARM_MINUTES = 5;
 
-chrome.runtime.onInstalled.addListener(() => {
+chrome.runtime.onInstalled.addListener((details) => {
   chrome.alarms.create(ALARM_NAME, { periodInMinutes: ALARM_MINUTES });
+
+  // Engangs-vask: fjern alt tidlegare lagra i chrome.storage.local — inkludert
+  // elevdata-cachar (cak_data_/cak_mod_) frå tidlegare versjonar. Frå og med denne
+  // versjonen lever elevdata berre i minnet; local inneheld berre ufarleg
+  // cache-metadata (seksjonsnamn, tidsstempel), som fyllast på nytt automatisk.
+  // Innstillingar ligg i chrome.storage.sync og vert IKKJE rørt. Køyrer ved
+  // installasjon og ved kvar oppdatering/reload av utvidinga.
+  if (details.reason === 'install' || details.reason === 'update') {
+    chrome.storage.local.clear();
+  }
 });
 
 chrome.runtime.onStartup.addListener(() => {
