@@ -940,9 +940,14 @@
       // NB: Canvas kan halde på workflow_state='submitted' sjølv etter at lærar set
       // karakter (t.d. for NQ/quiz). Ekskluder difor innleveringar som har fått karakter
       // (grade sett eller graded_at finst) — desse er allereie vurderte.
+      // «Venter vurdering»: pending_review betyr ALLTID at innleveringa treng manuell
+      // retting. NQ/quiz med essay-/filsvar får ofte ein DELVIS autoscore samtidig, så
+      // grade/graded_at finst sjølv om ho ikkje er ferdigvurdert. Karaktervakta gjeld
+      // difor berre 'submitted' (NQ/quiz kan bli hengande i 'submitted' etter ferdig
+      // retting) — aldri 'pending_review'.
       const venterVurderingDirekt = subs.filter(s =>
-        (s.workflow_state === 'submitted' || s.workflow_state === 'pending_review') &&
-        !s.grade && !s.graded_at
+        s.workflow_state === 'pending_review' ||
+        (s.workflow_state === 'submitted' && !s.grade && !s.graded_at)
       ).length;
 
       if (hasAnyLesson) {
@@ -1610,12 +1615,17 @@
   function calcAvgViewPct(modules, _activeMods) {
     if (!modules || !Array.isArray(modules)) return null;
     // Snitt visning: sum(fullført must_view-sider) / sum(totalt must_view-sider)
-    // berre over leksjonar eleven faktisk har opna (completed > 0).
-    // Uleste leksjonar inngår ikkje i nemnaren — berre det eleven har byrja på tel.
-    const opened = modules.filter(m => m.total > 0 && m.completed > 0);
-    if (opened.length === 0) return null;
-    const totalItems     = opened.reduce((acc, m) => acc + m.total, 0);
-    const completedItems = opened.reduce((acc, m) => acc + m.completed, 0);
+    // over leksjonar eleven har BYRJA PÅ. Byrja = anten opna lærestoff (completed > 0)
+    // ELLER levert ei oppgåve i modulen (eit oppfylt must_submit-krav i dotItems).
+    // Ein modul der eleven berre har levert, men ikkje opna lærestoff, tel med som
+    // 0 % visning (0 fullførte / alle must_view-sider) og dreg snittet ned — det er
+    // ønskeleg. Reine uleste/ikkje-påbyrja leksjonar inngår framleis ikkje i nemnaren.
+    const started = modules.filter(m =>
+      m.total > 0 && (m.completed > 0 || (m.dotItems || []).some(di => di.completed))
+    );
+    if (started.length === 0) return null;
+    const totalItems     = started.reduce((acc, m) => acc + m.total, 0);
+    const completedItems = started.reduce((acc, m) => acc + m.completed, 0);
     return Math.round(completedItems / totalItems * 100);
   }
 
