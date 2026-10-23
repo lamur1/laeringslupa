@@ -167,17 +167,23 @@
     }, 3000);
   }
 
-  // ─── Statsstøtte-badge ────────────────────────────────────────────────────
+  // ─── «Fullførte leksjoner»-mynt ─────────────────────────────────────────────
   function fundingBadgeActive() {
-    return cfg.showFundingBadge && Object.keys(moduleMapGlobal).length >= 12;
+    // «Fullførte leksjoner»-mynt: vises heile semesteret, uavhengig av kor mange
+    // leksjonar kurset har publisert (ingen ≥12-moduler-gate lenger).
+    return cfg.showFundingBadge;
   }
 
   function getFundingBadge(godkjent) {
-    if (!fundingBadgeActive() || godkjent === undefined || godkjent === null) return null;
-    if (godkjent === 0) return null;
-    if (godkjent >= 12) return { cls: 'green', label: '✓ ' + godkjent, color: '#2e7d32', border: '#2e7d32', bg: '#2e7d32' };
-    if (godkjent >= 10) return { cls: 'yellow', label: String(godkjent), color: '#b07d00', border: '#e6a817', bg: '#e6a817' };
-    return { cls: 'red', label: String(godkjent), color: '#c0392b', border: '#c0392b', bg: '#c0392b' };
+    if (!fundingBadgeActive() || !godkjent) return null; // 0/undefined → inga mynt
+    return { antall: godkjent, naadd: godkjent >= 12 }; // grøn hake frå 12, elles dempa grå
+  }
+
+  // Grøn/grå «mynt» med talet fullførte leksjonar; grøn hake frå 12. Delt mellom
+  // aktivitetscella og hover-teksten (same injiserte CSS gjeld begge stader).
+  function fundingCoinHtml(badge) {
+    const chk = badge.naadd ? '<span class="cak-coin-chk">✓</span>' : '';
+    return `<span class="cak-coin ${badge.naadd ? 'cak-coin-naadd' : 'cak-coin-under'}">${badge.antall}${chk}</span>`;
   }
 
   // ─── Les modulcache frå persistent lagring ───────────────────────────────
@@ -379,23 +385,28 @@
       .cak-copy-btn:hover { color: #5f5e5a !important; background: rgba(0,0,0,0.06); }
       .cak-save-btn:hover  { color: #3b6d11  !important; background: rgba(0,0,0,0.06); }
       .cak-copy-btn.cak-copied { color: #3b6d11 !important; opacity: 1; }
-      .cak-funding-pill {
-        margin-left: auto;
-        font-size: 9px;
-        font-weight: 700;
-        padding: 1px 5px;
-        border-radius: 8px;
-        letter-spacing: 0.02em;
-        flex-shrink: 0;
-        white-space: nowrap;
-        pointer-events: none;
+      .cak-coin {
+        flex-shrink: 0; box-sizing: border-box;
+        width: 22px; height: 22px; border-radius: 50%;
+        display: inline-flex; align-items: center; justify-content: center;
+        color: #fff; font-weight: 800; font-size: 11px; line-height: 1;
+        position: relative; pointer-events: none;
       }
-      .cak-funding-green  { background: #fff; color: #2e7d32; border: 1.5px solid #2e7d32; }
-      .cak-funding-yellow { background: #fff; color: #b07d00; border: 1.5px solid #e6a817; }
-      .cak-funding-red    { background: #fff; color: #c0392b; border: 1.5px solid #c0392b; }
-      .cak-funding-cell-green  { background: #f2faf2 !important; box-shadow: inset 0 0 0 1.5px #4caf50; }
-      .cak-funding-cell-yellow { background: #fffbf0 !important; box-shadow: inset 0 0 0 1.5px #e6a817; }
-      .cak-funding-cell-red    { background: #fff5f5 !important; box-shadow: inset 0 0 0 1.5px #c0392b; }
+      .cak-coin-naadd {
+        background: radial-gradient(circle at 35% 30%, #7ed07e, #2e7d32);
+        box-shadow: 0 1px 2px rgba(0,0,0,.25), inset 0 1px 1px rgba(255,255,255,.4);
+      }
+      .cak-coin-under {
+        background: radial-gradient(circle at 35% 30%, #d6d4cc, #8a897f);
+        box-shadow: 0 1px 1px rgba(0,0,0,.15);
+      }
+      .cak-coin-chk {
+        position: absolute; top: -2px; right: -2px;
+        width: 11px; height: 11px; border-radius: 50%;
+        background: #fff; color: #2e7d32; font-size: 8px; font-weight: 900;
+        display: flex; align-items: center; justify-content: center;
+        box-shadow: 0 0 0 1px #2e7d32;
+      }
       .cak-view-bar-wrap {
         position: absolute;
         bottom: 0;
@@ -1207,13 +1218,15 @@
               iconsWrap.appendChild(tlWrap);
               cell.appendChild(iconsWrap);
 
-              // Statsstøtte-badge
+              // «Fullførte leksjoner»-mynt
               const badge = getFundingBadge(data.godkjent);
               if (badge) {
-                const pill = document.createElement('span');
-                pill.className = 'cak-funding-pill cak-funding-' + badge.cls;
-                pill.textContent = badge.label;
-                cell.appendChild(pill);
+                const tmp = document.createElement('span');
+                tmp.innerHTML = fundingCoinHtml(badge);
+                const coin = tmp.firstElementChild;
+                coin.style.marginLeft = 'auto'; // skyv til høgre i cella
+                coin.title = `${badge.antall} fullførte leksjoner`;
+                cell.appendChild(coin);
               }
 
               // Visningsbar — 3px grønn stripe i bunnen viser snitt visningsprosent
@@ -1955,7 +1968,7 @@
           : '';
         const badge = getFundingBadge(godkjent);
         const leksjonStr = badge
-          ? `<span style="display:inline-flex;align-items:center;gap:6px;vertical-align:middle"><span style="display:inline-block;background:#fff;color:${badge.color};border:1.5px solid ${badge.border};font-size:10px;font-weight:700;padding:1px 6px;border-radius:8px;">${badge.label}</span><span style="color:#5f5e5a;font-size:12px;">leksjoner fullført · Terskel: ${terskel}%</span></span>`
+          ? `<span style="display:inline-flex;align-items:center;gap:6px;vertical-align:middle">${fundingCoinHtml(badge)}<span style="color:#5f5e5a;font-size:12px;">leksjoner fullført · Terskel: ${terskel}%</span></span>`
           : `${godkjent} av 15 leksjoner Fullført · Terskel: ${terskel}%`;
         d = leksjonStr + `<br>${pendingDot}${pending} ${pendingWord} venter vurdering`;
         if (delta > 0) {
