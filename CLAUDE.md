@@ -48,7 +48,6 @@ Desse reglane vart brotne 20.04.2026 og kosta ein økt å rette opp:
 - **PRIKKER** = `must_submit` (innleveringar med dato).
   Brukar `missing`-flagg og `due_at` frå Canvas API.
   `dotItems` i `fetchModuleCompletion` filtrerer bort `must_view` og `must_mark_done` — berre `must_submit`-element når `recalcDotsFromModules`.
-  Oppgåvar utan `due_at` skal IKKJE gje prikk — `recalcDotsFromModules` returnerer tidleg med `if (!dueAt) return`.
 
 - **FREMTIDSPRIKKER** = per elev: oppgaver eleven er TILDELT, med frist fram i tid, ikke levert/fritatt — aldri `isStarted`-sjekk.
   Endret 20.10.2026 (difftag-kurs): før ble modulens felles liste brukt, så det andre sporets oppgaver ble tegnet hos alle.
@@ -61,6 +60,21 @@ Desse reglane vart brotne 20.04.2026 og kosta ein økt å rette opp:
   `due_at`. Fjerner læreren «Alle» i «Tildel til» og beholder en tag med frist, blir oppgavens `due_at` TOM – fristen
   ligger bare på tildelingen. Før ga det ingen prikk i det hele tatt («Oppgåvar utan datofrist skal ikkje gje prikk»).
   For leksjonsnivå (nå-linje, stiplet framtidsboks) får slike oppgaver den seneste elevfristen som reserve.
+- **FRIVILLIG OPPGAVE = oppgave uten frist** (26.10.2026): en oppgave uten `due_at`/`cached_due_date`
+  (f.eks. «Ukas sang») er frivillig — eleven skal ALDRI få «Mangler»/press på den. Regel:
+  - **Levert** (eller fritatt) → prikk OVER linjen (oransje venter / grønn vurdert), i både grafikk og tekst,
+    nøyaktig som en frist-oppgave. Gjelder begge tellekilder:
+    - `processStudentData`: `deliveredPerMod`-filteret er `erTildelt(a) && (fristFor(a) ? !omit_from_final_grade : true)`
+      (frist-oppgaver må telle i karakteren; frivillige slipper omit-kravet). Egen venter-pass legger
+      frist-løse leverte som venter inn i `venterPerMod` (lessons-løkka hopper over frist-løse, så de mangler der).
+    - `recalcDotsFromModules`: `if (!dueAt)`-grenen teller `delivered`/`excused` fra modulfullføring, men
+      aldri mangel. (Erstatter den gamle `if (!dueAt) return` — som droppet frivillige helt.)
+  - **Ikke levert** → INGENTING: ingen grå «kommer»-prikk under linjen (begge fremtidsveier filtrerer på
+    frist: `fristFor(a)`/`a.due_at`), ingen mangel. Frivillige gir aldri press-signal, bare honnør ved levering.
+- **VENTER VURDERING = tekst følger grafikk** (26.10.2026): `venterVurderingDirekt` summeres fra `venterPerMod`
+  (batteriets venter-prikker), IKKE fra en rå `subs`-telling. Rå telling tok med venter uten frist / utenfor modul
+  som batteriet ikke kan vise, og ga tekst > grafikk. Venter-regel (i lessons-løkka): `pending_review` ALLTID;
+  `'submitted'` kun uten karakter (`!grade && !graded_at`) — NQ/quiz kan henge i `'submitted'` etter ferdig retting.
 - **SPOR-RADEN** (20.10.2026): hovervinduet viser elevens tagger per område, «Spor: 👀 🔷 · 📝 🟦 · 📚 🟦 · 💬 🔷»
   (`hentSpor`/`sporLinje`). Ett ekstra kall-par per kurs (group_categories + groups med users, non_collaborative), i bakgrunnen;
   ingen rad i kurs uten tagger. «–» = mangler tag i området; to ikoner = to tagger i samme område.
