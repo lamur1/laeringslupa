@@ -397,8 +397,9 @@
         box-shadow: 0 1px 2px rgba(0,0,0,.25), inset 0 1px 1px rgba(255,255,255,.4);
       }
       .cak-coin-under {
-        background: radial-gradient(circle at 35% 30%, #d6d4cc, #8a897f);
-        box-shadow: 0 1px 1px rgba(0,0,0,.15);
+        background: radial-gradient(circle at 35% 30%, #f5f3ec, #d3d1c7);
+        color: #2c2c2a; /* mørkt tall for god kontrast på lys mynt */
+        box-shadow: 0 1px 2px rgba(0,0,0,.18), inset 0 1px 1px rgba(255,255,255,.6);
       }
       .cak-coin-chk {
         position: absolute; top: -2px; right: -2px;
@@ -832,7 +833,9 @@
             );
             if (isFullfort) lessons[modId].fullfort++;
             if (isFullfort && due <= now) lessons[modId].fullfortPastDue++;
-            if (sub.workflow_state === 'submitted' || sub.workflow_state === 'pending_review') lessons[modId].venter++;
+            // Venter vurdering: pending_review alltid; 'submitted' berre utan karakter
+            // (NQ/quiz kan bli hengande i 'submitted' etter ferdig retting).
+            if (sub.workflow_state === 'pending_review' || (sub.workflow_state === 'submitted' && !sub.grade && !sub.graded_at)) lessons[modId].venter++;
             if (due > now)  lessons[modId].ahead++;
           } else if (isMissing) {
             lessons[modId].missing++;
@@ -888,12 +891,14 @@
         ? Math.max(0, leksjonerMedPassertFrist - godkjentAvPasserte)
         : null;
 
-      // Per-modul leverte oppgaver (for batteriprikker) — identisk filter som elevvisning:
-      // kun oppgaver med frist som teller i sluttkarakteren (ikke frivillige).
+      // Per-modul leverte oppgaver (for batteriprikker). Inkluderer også frist-løse
+      // (frivillige) oppgaver eleven har LEVERT — de skal gi innleverings-prikk, men
+      // aldri mangel (håndteres av lessons-løkka, som hopper over frist-løse).
+      // Frist-oppgaver må fortsatt telle i karakteren (ikke omit).
       const deliveredPerMod = {};
       const deliveredFormsPerMod = {};
       Object.entries(moduleMapGlobal).forEach(([modId, modAssigns]) => {
-        const relevant = modAssigns.filter(a => fristFor(a) && !a.omit_from_final_grade && erTildelt(a));
+        const relevant = modAssigns.filter(a => erTildelt(a) && (fristFor(a) ? !a.omit_from_final_grade : true));
         let count = 0;
         const forms = [];
         relevant.forEach(a => {
@@ -943,23 +948,28 @@
         if ((l.venter  || 0) > 0) venterPerMod[modId]  = l.venter;
         if ((l.excused || 0) > 0) excusedPerMod[modId] = l.excused;
       });
+      // Frist-løse (frivillige) oppgaver eleven har LEVERT og som ventar vurdering:
+      // tel som venter-prikk. Lessons-løkka hoppar over frist-løse, så dei manglar her.
+      Object.entries(moduleMapGlobal).forEach(([modId, modAssigns]) => {
+        modAssigns.forEach(a => {
+          if (fristFor(a) || !erTildelt(a)) return; // kun frist-løse, tildelte oppgaver
+          const sub = subs.find(s => String(s.assignment_id) === String(a.id));
+          if (!sub) return;
+          const venter = sub.workflow_state === 'pending_review' ||
+                         (sub.workflow_state === 'submitted' && !sub.grade && !sub.graded_at);
+          if (venter) venterPerMod[modId] = (venterPerMod[modId] || 0) + 1;
+        });
+      });
       studentData[sid].venterPerMod  = venterPerMod;
       studentData[sid].excusedPerMod = excusedPerMod;
 
-      // Direkte telling fra submissions — workflow_state 'submitted'/'pending_review'
-      // er Canvas sin kanoniske tilstand for "levert, venter vurdering".
-      // NB: Canvas kan halde på workflow_state='submitted' sjølv etter at lærar set
-      // karakter (t.d. for NQ/quiz). Ekskluder difor innleveringar som har fått karakter
-      // (grade sett eller graded_at finst) — desse er allereie vurderte.
-      // «Venter vurdering»: pending_review betyr ALLTID at innleveringa treng manuell
-      // retting. NQ/quiz med essay-/filsvar får ofte ein DELVIS autoscore samtidig, så
-      // grade/graded_at finst sjølv om ho ikkje er ferdigvurdert. Karaktervakta gjeld
-      // difor berre 'submitted' (NQ/quiz kan bli hengande i 'submitted' etter ferdig
-      // retting) — aldri 'pending_review'.
-      const venterVurderingDirekt = subs.filter(s =>
-        s.workflow_state === 'pending_review' ||
-        (s.workflow_state === 'submitted' && !s.grade && !s.graded_at)
-      ).length;
+      // «Venter vurdering» = summen av venter-prikkene i batteriet (venterPerMod), slik at
+      // TEKSTEN alltid stemmer med GRAFIKKEN. Begge bruker same per-modul-telling over
+      // elevens tildelte, due-daterte oppgaver (venter-logikken står i lessons-løkka over:
+      // pending_review alltid, 'submitted' berre utan karakter). Rå subs-telling tok med
+      // venter-innleveringar utan frist / utanfor modul som batteriet ikkje kan vise, og
+      // gav då tekst > grafikk.
+      const venterVurderingDirekt = Object.values(venterPerMod).reduce((a, b) => a + b, 0);
 
       if (hasAnyLesson) {
         studentData[sid].deadlineDelta   = netDelta;
@@ -1711,10 +1721,16 @@
         const isForcedMiss = missingSet.has(di.contentId);
         const isExcused    = excusedSet.has(di.contentId);
         const dueAt        = dueDateById[di.contentId];
-        if (!dueAt) return; // Oppgåvar utan datofrist skal ikkje gje prikk
+        const form         = sporForm(di.title);
+        if (!dueAt) {
+          // Frist-løs (frivillig) oppgave: berre LEVERT (eller fritatt) gjev prikk,
+          // aldri mangel — det finst inga frist å bomme på.
+          if (isExcused) { excused++; eForms.push(form); }
+          else if (di.completed && !isForcedMiss) { delivered++; dForms.push(form); }
+          return;
+        }
         const due          = new Date(dueAt);
         const isPastDue    = due <= now;
-        const form         = sporForm(di.title);
         if (isExcused) {
           excused++; eForms.push(form);
         } else if (di.completed && !isForcedMiss) {
