@@ -57,7 +57,7 @@
   // eleven faktisk er tildelt – også når difftag har gjort tag-tildelingen om til navnelister.
   let itemKeyByAssignment = {};
   // SPOR-RADEN i hovervinduet (20.10.2026): elevens differensieringstagger per område, i samme
-  // ikonspråk som titlene – «Spor: 👀 🔷 · 📝 🟦 · 📚 🟦 · 💬 🔷». Hentes én gang per kurs (to kall),
+  // ikonspråk som titlene – «Spor: 🔷👀 · 🟦📝 · 🟦📚 · 🔷💬». Hentes én gang per kurs (to kall),
   // tomt i kurs uten tagger eller ved feil. Lever bare i minnet, som resten av elevdataene.
   let sporOmrader = [];  // [{ id, ikon }] – områdene (gruppekategoriene) i opprettelsesrekkefølge
   let sporPerElev = {};  // sid -> { kategoriId: [tag-ikon, …] }
@@ -580,12 +580,13 @@
     }
   }
 
-  // «Spor: 👀 🔷 · 📝 🟦 …» for én elev; '' når kurset ikke har tagger. Mangler eleven tag i et
+  // «Spor: 🔷👀 · 🟦📝 …» for én elev; '' når kurset ikke har tagger. Mangler eleven tag i et
   // område, vises «–»; har han to (Canvas' eget tag-panel), vises begge.
+  // Rekkefølge spor-ikon FØR område-ikon – samme som i modulelementenes titler («🔷👀»).
   function sporLinje(sid) {
     if (!sporOmrader.length) return '';
     const mine = sporPerElev[String(sid)] || {};
-    return 'Spor: ' + sporOmrader.map(o => `${o.ikon} ${(mine[o.id] || []).join('') || '–'}`).join(' · ');
+    return 'Spor: ' + sporOmrader.map(o => `${(mine[o.id] || []).join('') || '–'}${o.ikon}`).join(' · ');
   }
 
   function processStudentData(enrollments, submissions, assignments, modules) {
