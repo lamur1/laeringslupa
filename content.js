@@ -667,11 +667,16 @@
 
     const hasAnyDeadlines = [...moduleAssignmentIds].some(id => assignmentById[id]?.due_at);
 
-    // Bygg modId -> seneste due_at for stiplet visning av fremtidige leksjoner
+    // Bygg modId -> leksjonens frist, for «Nå»-linja og stiplet visning av fremtidige leksjoner.
+    // MEDIAN, ikke max (25.11.2026): enkeltelementer med avvikende frist (f.eks. en semester-survey
+    // «Felles tilbakemelding …» parkert i en leksjonsmodul) skal ikke kapre hele leksjonens frist og
+    // dytte «Nå»-linja/framtidsvisningen feil. Median er robust mot én uteligger i begge retninger;
+    // for en normal leksjon (frister ~ett minutt fra hverandre) er median ≈ max, så ingen endring.
     moduleDeadlineMap = {};
     Object.entries(moduleMapGlobal).forEach(([modId, assignments]) => {
-      const dates = assignments.map(a => a.due_at ? new Date(a.due_at) : null).filter(Boolean);
-      moduleDeadlineMap[modId] = dates.length > 0 ? new Date(Math.max(...dates)) : null;
+      const ms = assignments.map(a => a.due_at ? new Date(a.due_at).getTime() : null)
+        .filter(Boolean).sort((a, b) => a - b);
+      moduleDeadlineMap[modId] = ms.length > 0 ? new Date(ms[Math.floor((ms.length - 1) / 2)]) : null;
     });
 
     enrollments.forEach((e) => {
@@ -1910,15 +1915,21 @@
         const cy = midY - r - 2 - d * (r * 2 + dotGap);
         bars += tegnPrikk(cx, cy, r, prikkForm(mod.id, dForms, v), 'white', '#e65100', 1.8);
       }
+      // Vurdert-prikkar: grøn kant, full størrelse, like etter venter.
       for (let g = 0; g < Math.min(vurdert, maxDots - d); g++, d++) {
         const cy = midY - r - 2 - d * (r * 2 + dotGap);
-        bars += tegnPrikk(cx, cy, r, prikkForm(mod.id, dForms, venter + g), 'white', '#3b6d11', 0.8);
+        bars += tegnPrikk(cx, cy, r, prikkForm(mod.id, dForms, venter + g), 'white', '#3b6d11', 1.2);
       }
-      // Fritatt-prikkar: lilla kant — tydeleg skilt frå venter (oransje) og vurdert (grøn)
+      // Fritatt-prikkar (25.11.2026): lavprioritert status (ofte auto-satt av difftag ved tag-bytte,
+      // eller manuelt ved klassebytte). Tegnes TIL SLUTT som en kompakt, OVERLAPPENDE stabel øverst,
+      // så den ikke skyver ut venter/vurdert og flest mulig får plass. Stabelen er ikke ment å telles
+      // prikk for prikk – det eksakte tallet står i tekstlinja «N fritatt».
       const excused = (excusedPerMod || {})[mod.id] || 0;
-      for (let e = 0; e < Math.min(excused, maxDots - d); e++, d++) {
-        const cy = midY - r - 2 - d * (r * 2 + dotGap);
-        bars += tegnPrikk(cx, cy, r, prikkForm(mod.id, eForms, e), 'white', '#7B3FA5', 1.8);
+      const fPitch = 5;               // 2r = 8, så 5 px ≈ 40 % overlapp
+      const fTopp  = labelH + r + 1;  // ikke tegn over 100 %-linja
+      let fy = midY - r - 2 - d * (r * 2 + dotGap);  // start der de fulle prikkene slutter
+      for (let e = 0; e < excused && fy >= fTopp; e++, fy -= fPitch) {
+        bars += tegnPrikk(cx, fy, r, prikkForm(mod.id, eForms, e), 'white', '#7B3FA5', 1.8);
       }
     });
 
@@ -1933,7 +1944,7 @@
       const mForms  = (forms.missing || {})[mod.id] || [];
       for (let d = 0; d < dots; d++) {
         const cy = midY + r + 2 + d * (r * 2 + dotGap);
-        bars += tegnPrikk(cx, cy, r, prikkForm(mod.id, mForms, d), 'white', '#3a3a3a', 0.8);
+        bars += tegnPrikk(cx, cy, r, prikkForm(mod.id, mForms, d), 'white', '#3a3a3a', 1.2);
       }
     });
 
@@ -1952,11 +1963,16 @@
       const cx      = i * (barW + gap) + barW / 2;
       const r = 4, dotGap = 2;
       const maxDots = Math.floor(downH / (r * 2 + dotGap));
-      const dots    = Math.min(remaining, maxDots);
+      // Variant 2 (25.11.2026): start framtidsprikkene UNDER eventuelle Mangler-prikker i samme
+      // kolonne (begge ligger under streken), så de to typene ikke overlapper ved «Nå»-grensen.
+      // Sjeldent i praksis (fristene i en leksjon er ~ett minutt fra hverandre), men ryddig når det skjer.
+      const manglerHer = Math.min((skippedPerMod || {})[mod.id] || 0, maxDots);
+      const dots    = Math.min(remaining, maxDots - manglerHer);
+      if (dots <= 0) return;
       // Fremtidsprikkenes form følger elementenes spor-ikon (forhåndsvisning).
       const fForms  = perElev || futureAssigns.map(a => sporForm(a.name));
       for (let d = 0; d < dots; d++) {
-        const cy = midY + r + 2 + d * (r * 2 + dotGap);
+        const cy = midY + r + 2 + (manglerHer + d) * (r * 2 + dotGap);
         bars += tegnPrikk(cx, cy, r, fForms[d] || 'sirkel', '#dedad4', '#888780', 1);
       }
     });
@@ -1973,6 +1989,7 @@
       ? 'Ikke levert oppgaver ennå'
       : `Innlevert: ${subDays} dag${subDays === 1 ? '' : 'er'} siden`;
     let d = 'Ingen frister i kurset';
+    let venterLinje = '';  // flyttet ned til innlevering-tellerne (venter/Mangler/fritatt) – se return
     if (delta === null) {
       d = 'Har frister — ikke levert';
     } else if (delta !== undefined) {
@@ -1981,13 +1998,14 @@
         const pending = venterVurdering || 0;
         const pendingWord = pending === 1 ? 'innlevering' : 'innleveringer';
         const pendingDot = pending > 0
-          ? `<svg width="9" height="9" viewBox="0 0 9 9" style="vertical-align:middle;margin-right:3px"><circle cx="4.5" cy="4.5" r="3.5" fill="white" stroke="#e65100" stroke-width="1.8"/></svg>`
+          ? `<svg width="11" height="11" viewBox="0 0 11 11" style="vertical-align:middle;margin-right:3px"><circle cx="5.5" cy="5.5" r="4" fill="white" stroke="#e65100" stroke-width="2.2"/></svg>`
           : '';
         const badge = getFundingBadge(godkjent);
         const leksjonStr = badge
           ? `<span style="display:inline-flex;align-items:center;gap:6px;vertical-align:middle">${fundingCoinHtml(badge)}<span style="color:#5f5e5a;font-size:12px;">leksjoner fullført · Terskel: ${terskel}%</span></span>`
           : `${godkjent} av 15 leksjoner Fullført · Terskel: ${terskel}%`;
-        d = leksjonStr + `<br>${pendingDot}${pending} ${pendingWord} venter vurdering`;
+        d = leksjonStr;
+        venterLinje = `<br>${pendingDot}${pending} ${pendingWord} venter vurdering`;
         if (delta > 0) {
           const leks = delta === 1 ? '1 leksjon' : `${delta} leksjoner`;
           d += `<br>I forkant — levert i ${leks} med fremtidig frist`;
@@ -2020,11 +2038,19 @@
     }
 
     const skipped = hoppetOver > 0
-      ? `<br><span style="color:#c62828"><svg width="9" height="9" viewBox="0 0 9 9" style="vertical-align:middle;margin-right:3px"><circle cx="4.5" cy="4.5" r="3.5" fill="white" stroke="#3a3a3a" stroke-width="1"/></svg>${hoppetOver} innlevering${hoppetOver === 1 ? '' : 'er'} med status Mangler</span>`
+      ? `<br><span style="color:#c62828"><svg width="11" height="11" viewBox="0 0 11 11" style="vertical-align:middle;margin-right:3px"><circle cx="5.5" cy="5.5" r="4" fill="white" stroke="#3a3a3a" stroke-width="2.2"/></svg>${hoppetOver} innlevering${hoppetOver === 1 ? '' : 'er'} med status Mangler</span>`
+      : '';
+
+    // Fritatt-linje: egen tekstlinje når eleven har fritatte innleveringer. Summen hentes fra
+    // excusedPerMod (samme kilde som de lilla fritatt-prikkene i batteriet, så tekst = grafikk).
+    // Lilla ring (hvit fyll) = samme markør som i batteriet; nøytral tekst (fritatt er ikke et avvik).
+    const fritatt = Object.values(excusedPerMod || {}).reduce((a, b) => a + (b || 0), 0);
+    const fritattLinje = fritatt > 0
+      ? `<br><span style="color:#5f5e5a"><svg width="11" height="11" viewBox="0 0 11 11" style="vertical-align:middle;margin-right:3px"><circle cx="5.5" cy="5.5" r="4" fill="white" stroke="#7B3FA5" stroke-width="2.2"/></svg>${fritatt} innlevering${fritatt === 1 ? '' : 'er'} fritatt</span>`
       : '';
 
     const sporRad = forms.spor ? `<br>${forms.spor}` : '';
-    return `${l}<br>${s}<br>${d}${avgViewLine}${skipped}${sporRad}${battery}`;
+    return `${l}<br>${s}<br>${d}${avgViewLine}${venterLinje}${skipped}${fritattLinje}${sporRad}${battery}`;
   }
 
   function updateCacheStatus(date) {
